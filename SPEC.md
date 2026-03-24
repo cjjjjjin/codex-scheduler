@@ -1,6 +1,6 @@
 # codex-scheduler SPEC
 
-OpenAI Codex CLI를 지정한 주기에 지정한 Session에 메세지를 전달하는 Backend, Frontend 프로젝트 입니다.
+OpenAI Codex SDK를 이용해 지정한 주기에 지정한 Codex thread에 메세지를 전달하는 Backend, Frontend 프로젝트 입니다.
 
 ## 프로젝트 범위
 
@@ -9,7 +9,7 @@ OpenAI Codex CLI를 지정한 주기에 지정한 Session에 메세지를 전달
 - Task 생성, 조회, 수정, 삭제
 - Task enable/disable
 - CRON 기반 스케쥴 실행
-- 지정된 시점에 Codex Session으로 Prompt 전달
+- 지정된 시점에 Codex thread로 Prompt 전달
 - 실행 결과 추적
 
 ## 정의
@@ -20,7 +20,7 @@ OpenAI Codex CLI를 지정한 주기에 지정한 Session에 메세지를 전달
 Task는 아래의 정보를 가진다
 - 고유 ID
 - 스케쥴 정보: CRON 스타일의 스케쥴 정의
-- CODEX Session ID
+- CODEX thread ID
 - 스케쥴이 설정된 시간에 전달 할 Prompt
 - Enable 여부
 - 생성 일시
@@ -42,7 +42,7 @@ Task는 아래의 정보를 가진다
 스케쥴러가 Task를 실행할 때마다 실행 이력을 남긴다.
 
 - 실행 대상 Task ID
-- 실행 대상 CODEX Session ID
+- 실행 대상 CODEX thread ID
 - 실행 시각
 - 실행 결과 상태: 성공 / 실패
 - 실패 시 에러 메시지
@@ -63,16 +63,16 @@ Task는 아래의 정보를 가진다
 #### Task 추가 기능
 
 - task를 추가 할 수 있는 GUI 제공
-- 전달 받는 정보는 없으며, 생성 시 CODEX Session을 생성하여 ID 할당
+- 전달 받는 정보는 없으며, 생성 시 Codex SDK로 thread를 생성하여 ID 할당
 - 생성 시 입력 값은 스케쥴 정보와 Prompt 이다.
-- CODEX Session ID는 사용자가 직접 입력하지 않는다.
-- Session 생성 실패 시 Task 생성도 실패로 처리한다.
+- CODEX thread ID는 사용자가 직접 입력하지 않는다.
+- thread 생성 실패 시 Task 생성도 실패로 처리한다.
 
 #### Task 편집 기능
 
 - 스케쥴 수정
 - Prompt 수정
-- CODEX Session ID는 Task 편집 대상이 아니다.
+- CODEX thread ID는 Task 편집 대상이 아니다.
 - 수정된 내용은 저장 이후 다음 스케쥴 실행부터 적용된다.
 
 #### Task 삭제 기능
@@ -87,7 +87,7 @@ Task는 아래의 정보를 가진다
 
 ### 스케쥴러 기능
 
-- 각 Task의 스케쥴 정보에 해당하는 시기에 Codex를 이용하여 지정된 Session에 Prompt를 전달
+- 각 Task의 스케쥴 정보에 해당하는 시기에 Codex SDK를 이용하여 지정된 thread에 Prompt를 전달
 - enable=true 인 Task만 실행 대상이다.
 - 실행 성공/실패 여부를 실행 이력에 기록한다.
 - 실행 실패 시 해당 실행 건은 실패로 기록하고, 다음 스케쥴 주기는 정상적으로 계속 진행한다.
@@ -106,6 +106,7 @@ Task는 아래의 정보를 가진다
   - Task 실행 이력 조회
 - 스케쥴러는 backend 내부 구성요소로 동작한다.
 - Codex 호출 로직은 API 계층과 분리된 서비스 계층으로 구성한다.
+- Codex SDK는 TypeScript 라이브러리이므로, backend는 필요 시 Node.js 기반 브리지 또는 별도 Codex 실행 서비스를 통해 연동할 수 있다.
 
 ## Frontend 요구사항
 
@@ -118,13 +119,15 @@ Task는 아래의 정보를 가진다
   - Task enable/disable 토글 UI
   - Task 실행 이력 확인 UI
 - Task 생성/수정 시 사용자가 직접 입력하는 값은 스케쥴과 Prompt 중심이어야 한다.
-- Session ID는 조회용 정보로 표시할 수 있으나, 생성 시 직접 입력받지 않는다.
+- CODEX thread ID는 조회용 정보로 표시할 수 있으나, 생성 시 직접 입력받지 않는다.
 
 ## Codex 연동 요구사항
 
-- Task 생성 시 새로운 CODEX Session을 생성하고, 생성된 Session ID를 Task에 저장한다.
-- 스케쥴 실행 시 저장된 Session ID를 이용해 Prompt를 전달한다.
-- Session 생성 또는 Prompt 전달 실패 시 backend에서 오류를 감지하고 기록해야 한다.
+- Codex 연동은 `Codex SDK`를 기준으로 구현한다.
+- Task 생성 시 새로운 Codex thread를 생성하고, 생성된 thread ID를 Task에 저장한다.
+- 스케쥴 실행 시 저장된 thread ID를 이용해 해당 thread를 resume 한 뒤 Prompt를 전달한다.
+- thread 생성 또는 Prompt 전달 실패 시 backend에서 오류를 감지하고 기록해야 한다.
+- 본 문서에서 `CODEX Session ID` 라고 표현하던 값은 구현상 `Codex thread ID` 를 의미한다.
 
 ## 설정 및 운영
 

@@ -1,0 +1,13 @@
+{
+  "name": "codex-schedule-codex-bridge",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "create-thread": "node src/main.mjs create-thread",
+    "run-prompt": "node src/main.mjs run-prompt"
+  },
+  "dependencies": {
+    "@openai/codex-sdk": "latest"
+  }
+}

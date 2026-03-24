@@ -1,0 +1,277 @@
+:root {
+  font-family: "Segoe UI", "Apple SD Gothic Neo", sans-serif;
+  color: #15202b;
+  background:
+    radial-gradient(circle at top, rgba(255, 214, 153, 0.4), transparent 30%),
+    linear-gradient(180deg, #fff7ec 0%, #f2f6fb 45%, #eef2f7 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-shell {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 24px;
+}
+
+.hero-actions {
+  display: grid;
+  justify-items: end;
+  gap: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #b45f06;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 4rem);
+  line-height: 1;
+}
+
+.hero-copy {
+  max-width: 520px;
+  margin: 0;
+  color: #4d5d6c;
+  line-height: 1.6;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.left-column {
+  display: grid;
+  gap: 20px;
+}
+
+.panel {
+  border: 1px solid rgba(21, 32, 43, 0.08);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 20px 50px rgba(41, 59, 82, 0.09);
+  backdrop-filter: blur(14px);
+  padding: 20px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.meta {
+  color: #60717f;
+  font-size: 0.92rem;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.field span {
+  font-weight: 600;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  border: 1px solid #d4dde7;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #fff;
+}
+
+.primary-button,
+.ghost-button,
+.danger-button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+
+.primary-button {
+  background: #15202b;
+  color: #fff;
+}
+
+.ghost-button {
+  background: #edf3f9;
+  color: #223445;
+}
+
+.danger-button {
+  background: #ffe2e0;
+  color: #a33125;
+}
+
+.primary-button:hover,
+.ghost-button:hover,
+.danger-button:hover {
+  transform: translateY(-1px);
+}
+
+.task-table,
+.history-list {
+  display: grid;
+  gap: 12px;
+}
+
+.task-row,
+.history-card {
+  border-radius: 18px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid rgba(21, 32, 43, 0.08);
+}
+
+.task-table-header,
+.task-row {
+  display: grid;
+  grid-template-columns: 120px 160px minmax(220px, 1fr) minmax(180px, 220px) 180px 220px;
+  gap: 12px;
+  align-items: center;
+}
+
+.task-table-header {
+  padding: 0 8px;
+  color: #60717f;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.task-row {
+  cursor: pointer;
+}
+
+.task-row.selected {
+  border-color: #15202b;
+  box-shadow: 0 12px 28px rgba(21, 32, 43, 0.12);
+}
+
+.history-card-header,
+.task-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.history-card p,
+.task-row-cell {
+  margin: 0;
+}
+
+.task-row-prompt {
+  color: #33475b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-row-session {
+  color: #5c6c7b;
+  font-size: 0.92rem;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-chip.enabled {
+  background: #ddf7e4;
+  color: #0d6b31;
+}
+
+.status-chip.disabled {
+  background: #ffe5d9;
+  color: #ad3f1d;
+}
+
+.error-banner,
+.empty-state,
+.error-text {
+  color: #9e2f2f;
+}
+
+.error-banner {
+  margin-bottom: 20px;
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: #ffe8e7;
+}
+
+@media (max-width: 960px) {
+  .hero,
+  .layout,
+  .history-card-header {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .hero-actions {
+    justify-items: stretch;
+  }
+
+  .task-table-header {
+    display: none;
+  }
+
+  .task-row {
+    grid-template-columns: 1fr;
+  }
+
+  .task-actions {
+    flex-wrap: wrap;
+  }
+}
