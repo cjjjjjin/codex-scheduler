@@ -5,14 +5,13 @@
       "name": "Backend: FastAPI",
       "type": "debugpy",
       "request": "launch",
-      "python": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+      "python": "${workspaceFolder}/backend/.venv/bin/python",
       "module": "uvicorn",
       "cwd": "${workspaceFolder}/backend",
       "args": [
         "app.main:app",
-        "--reload",
         "--host",
-        "127.0.0.1",
+        "0.0.0.0",
         "--port",
         "8000"
       ],
@@ -20,17 +19,24 @@
       "console": "integratedTerminal"
     },
     {
+      "name": "Backend: FastAPI (Reload)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "${workspaceFolder}/backend/.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    {
       "name": "Frontend: Vite Dev Server",
       "type": "node-terminal",
       "request": "launch",
-      "command": "npm run dev",
+      "command": "npm run dev -- --host 0.0.0.0",
       "cwd": "${workspaceFolder}/frontend"
     },
     {
       "name": "Frontend: Chrome",
       "type": "pwa-chrome",
       "request": "launch",
-      "url": "http://localhost:5173",
+      "url": "http://192.168.0.14:5173",
       "webRoot": "${workspaceFolder}/frontend/src"
     }
   ],
