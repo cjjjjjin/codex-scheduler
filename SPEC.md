@@ -25,6 +25,7 @@ Task는 아래의 정보를 가진다
 - Enable 여부
 - 생성 일시
 - 수정 일시
+- workspace directory
 
 ### Task 식별자
 
@@ -55,8 +56,12 @@ Task는 아래의 정보를 가진다
 
 ## 기능
 
-- backend: python, fastapi
+- backend: node.js, express
 - frontend: typescript, react
+
+### backend database
+
+- Task의 관리를 위해서 SQLite DB를 사용한다
 
 ### Task 관리
 
@@ -95,7 +100,7 @@ Task는 아래의 정보를 가진다
 
 ## Backend 요구사항
 
-- Python + FastAPI 기반으로 구현한다.
+- Node.js + Express 기반으로 구현한다.
 - 아래 API 범위를 기본 제공한다.
   - Task 목록 조회
   - Task 상세 조회
@@ -106,7 +111,7 @@ Task는 아래의 정보를 가진다
   - Task 실행 이력 조회
 - 스케쥴러는 backend 내부 구성요소로 동작한다.
 - Codex 호출 로직은 API 계층과 분리된 서비스 계층으로 구성한다.
-- Codex SDK는 TypeScript 라이브러리이므로, backend는 필요 시 Node.js 기반 브리지 또는 별도 Codex 실행 서비스를 통해 연동할 수 있다.
+- Codex SDK는 backend 런타임 내부에서 직접 호출하는 것을 기본 구현 방향으로 한다.
 
 ## Frontend 요구사항
 
@@ -128,6 +133,7 @@ Task는 아래의 정보를 가진다
 - 스케쥴 실행 시 저장된 thread ID를 이용해 해당 thread를 resume 한 뒤 Prompt를 전달한다.
 - thread 생성 또는 Prompt 전달 실패 시 backend에서 오류를 감지하고 기록해야 한다.
 - 본 문서에서 `CODEX Session ID` 라고 표현하던 값은 구현상 `Codex thread ID` 를 의미한다.
+- 1차 구현에서는 backend 내부의 Node.js 서비스 계층이 Codex SDK를 직접 사용한다.
 
 ## 설정 및 운영
 

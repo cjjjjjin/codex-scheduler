@@ -1,6 +1,6 @@
 # Codex App Server 조사
 
-조사일: 2026-03-24
+조사일: 2026-03-27
 
 ## 요약
 
@@ -120,7 +120,7 @@ App Server는 다음과 같은 상호작용을 공식 지원한다.
 
 - backend 중심 자동화에 더 잘 맞는다.
 - 공식 문서가 CI/CD, 내부 도구, 애플리케이션 통합 용도로 SDK를 직접 권장한다.
-- `thread ID`를 저장해서 이후 실행에서 이어가는 모델이 현재 `Task.session_id` 요구와 더 잘 맞는다.
+- `thread ID`를 저장해서 이후 실행에서 이어가는 모델이 현재 `Task.thread_id` 요구와 더 잘 맞는다.
 - App Server처럼 별도 장기 프로세스와 JSON-RPC client 구현을 직접 관리할 필요가 적다.
 
 ### App Server를 고려할 시점
@@ -134,29 +134,64 @@ App Server는 다음과 같은 상호작용을 공식 지원한다.
 
 ## 이 프로젝트에 미치는 설계 영향
 
-현재 문서상의 `CODEX Session ID`는 실제 구현 단계에서 아래 둘 중 하나로 구체화해야 한다.
+현재 프로젝트 기준 지속 식별자는 `session_id` 보다는 `thread_id` 로 정리하는 편이 정확하다.
+
+구현 단계에서 개념적으로는 아래 둘 중 하나로 해석할 수 있다.
 
 ### 옵션 A. SDK 기준
 
-- `Task.session_id` = Codex SDK의 `threadId`
+- `Task.thread_id` = Codex SDK의 `threadId`
 - Task 생성 시 thread 생성
 - 스케줄 실행 시 `resumeThread(threadId)` 또는 동일 thread 객체를 재개
 
 ### 옵션 B. App Server 기준
 
-- `Task.session_id` = App Server의 `thread.id`
+- `Task.thread_id` = App Server의 `thread.id`
 - backend가 `codex app-server` 프로세스를 관리
 - JSON-RPC로 `thread/start` 후 `thread.id` 저장
 - 이후 실행에서 `thread/resume` + `turn/start`
 
 현재 프로젝트 요구만 놓고 보면 옵션 A가 더 단순하다.
 
+## 현재 코드베이스 기준 정리
+
+현재 저장소의 방향과 구현 상태를 함께 보면 아래 판단이 더 명확하다.
+
+- backend는 `Node.js + Express` 기준으로 정리되어 있다.
+- Codex 연동은 backend 런타임 내부 service 계층에서 직접 SDK를 호출하는 방향이다.
+- DB와 타입은 `thread_id` 중심으로 정리되고 있다.
+- scheduler 는 저장된 `thread_id` 를 사용해 실행하는 구조를 전제로 한다.
+
+즉, App Server를 도입하려면 단순 교체가 아니라 아래 추가 복잡도가 생긴다.
+
+- `codex app-server` 프로세스 관리
+- JSON-RPC transport 처리
+- 초기화 handshake 구현
+- thread/turn/item 이벤트 모델 매핑
+- 장기 연결 오류 복구
+
+반면 현재 프로젝트 범위에서는 그 복잡도를 정당화할 만한 rich client 요구가 없다.
+
+## 지금 남은 App Server 검토 가치
+
+현 시점에서 App Server가 여전히 의미가 있는 경우는 "1차 범위 밖 확장" 으로 보는 편이 맞다.
+
+예시:
+
+- frontend에 Codex 진행 상황을 실시간 스트리밍으로 표시
+- tool/file/network 승인 흐름을 웹 UI로 제공
+- 단순 실행 결과가 아니라 item/turn 단위 히스토리를 상세하게 렌더링
+- 향후 IDE 플러그인이나 데스크톱 클라이언트와 같은 rich client를 별도 제품으로 확장
+
+즉, App Server는 "현재 구현 대안" 이라기보다 "향후 rich client 확장 옵션" 에 가깝다.
+
 ## 결론
 
 - `Codex App Server`는 실제 OpenAI 공식 기능이며, rich client 통합용 프로토콜이다.
-- session 개념은 App Server 문맥에서는 `thread.id`로 이해하는 것이 맞다.
+- 지속 식별자 개념은 App Server 문맥에서도 `thread.id`로 이해하는 것이 맞다.
 - 그러나 `codex-schedule` 같은 스케줄 기반 backend 자동화 시스템에는 공식 문서 기준으로 `Codex SDK`가 더 적합하다.
-- 따라서 이 프로젝트에서 "세션 생성 후 재사용"을 구현하려면, 우선 `Codex SDK` 기준으로 `thread ID`를 저장하는 방향을 검토하는 것이 합리적이다.
+- 현재 코드베이스 상태까지 감안하면, 이 프로젝트는 App Server보다 backend 내부 `Codex SDK` 직접 호출 방향이 더 일관되고 단순하다.
+- 따라서 이 프로젝트에서 thread 생성 후 재사용을 구현하려면, 우선 `Codex SDK` 기준으로 `thread_id` 를 저장하는 방향이 가장 합리적이다.
 
 ## 참고 자료
 

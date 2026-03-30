@@ -10,18 +10,7 @@ export type Task = {
   next_run_at: string | null;
 };
 
-export type TaskInput = {
-  schedule: string;
-  prompt: string;
-};
-
-export type ChatMessage = {
-  id: string;
-  role: "assistant" | "user";
-  content: string;
-  created_at: string;
-  status?: "sending" | "error";
-};
+export type ExecutionStatus = "success" | "failed";
 
 export type ExecutionRecord = {
   id: number;
@@ -30,8 +19,21 @@ export type ExecutionRecord = {
   prompt: string;
   scheduled_for: string;
   executed_at: string;
-  status: "success" | "failed";
+  status: ExecutionStatus;
   error_message: string | null;
+};
+
+export type TaskPayload = {
+  schedule: string;
+  prompt: string;
+};
+
+export type TaskEnabledPayload = {
+  enabled: boolean;
+};
+
+export type TaskChatPayload = {
+  message: string;
 };
 
 export type TaskChatResponse = {
@@ -39,4 +41,10 @@ export type TaskChatResponse = {
   thread_id: string;
   message: string;
   response_text: string | null;
+};
+
+export type CodexSendResult = {
+  success: boolean;
+  errorMessage: string | null;
+  responseText: string | null;
 };

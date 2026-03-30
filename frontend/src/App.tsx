@@ -1,18 +1,33 @@
 import { useEffect, useState } from "react";
 
 import { api } from "./api/client";
-import { ExecutionHistory } from "./components/ExecutionHistory";
+import { ExecutionPanel } from "./components/ExecutionPanel";
+import { TaskChat } from "./components/TaskChat";
 import { TaskForm } from "./components/TaskForm";
 import { TaskList } from "./components/TaskList";
-import type { ExecutionRecord, Task, TaskInput } from "./types";
+import type { ChatMessage, ExecutionRecord, Task, TaskInput } from "./types";
+
+type ViewMode = "list" | "create" | "edit";
+
+function createIntroMessage(task: Task): ChatMessage {
+  return {
+    id: `${task.id}-intro`,
+    role: "assistant",
+    content: `Task "${task.prompt}"에 연결된 Codex thread입니다. 이 창에서 바로 대화를 이어갈 수 있습니다.`,
+    created_at: task.updated_at
+  };
+}
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [history, setHistory] = useState<ExecutionRecord[]>([]);
+  const [chatMessagesByTask, setChatMessagesByTask] = useState<Record<string, ChatMessage[]>>({});
+  const [sendingTaskId, setSendingTaskId] = useState<string | null>(null);
+  const [draftSchedule, setDraftSchedule] = useState("*/5 * * * *");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   async function loadTasks() {
     const items = await api.listTasks();
@@ -55,14 +70,19 @@ export default function App() {
     await loadHistory(taskId ?? selectedTaskId);
   }
 
+  function ensureTaskChat(task: Task): ChatMessage[] {
+    return chatMessagesByTask[task.id] ?? [createIntroMessage(task)];
+  }
+
   async function handleSubmit(payload: TaskInput) {
     try {
       setError(null);
       if (editingTask) {
         await api.updateTask(editingTask.id, payload);
+        setViewMode("list");
       } else {
         await api.createTask(payload);
-        setIsCreateOpen(false);
+        setViewMode("list");
       }
       setEditingTask(null);
       await refresh();
@@ -87,6 +107,7 @@ export default function App() {
       await api.deleteTask(taskId);
       if (editingTask?.id === taskId) {
         setEditingTask(null);
+        setViewMode("list");
       }
       if (selectedTaskId === taskId) {
         setSelectedTaskId(null);
@@ -97,63 +118,245 @@ export default function App() {
     }
   }
 
-  return (
-    <div className="app-shell">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">codex-schedule</p>
-          <h1>Codex Session Scheduler</h1>
-        </div>
-        <div className="hero-actions">
-          <p className="hero-copy">
-            CRON 스케줄 기반으로 Prompt를 Session에 전달하고, 실행 이력을 확인하는 관리 화면입니다.
-          </p>
-          <button
-            className="primary-button"
-            type="button"
-            onClick={() => {
-              setEditingTask(null);
-              setIsCreateOpen(true);
-            }}
-          >
-            Task 추가
-          </button>
-        </div>
-      </header>
+  const selectedTask = tasks.find((task) => task.id === selectedTaskId) ?? null;
+  const selectedTaskMessages = selectedTask ? ensureTaskChat(selectedTask) : [];
+  const isChatSending =
+    (selectedTaskId !== null && sendingTaskId === selectedTaskId) || sendingTaskId === "draft";
 
+  async function handleSendMessage(message: string) {
+    if (viewMode === "create") {
+      await handleCreateFromChat(message);
+      return;
+    }
+
+    if (!selectedTask) {
+      return;
+    }
+
+    const taskId = selectedTask.id;
+    const createdAt = new Date().toISOString();
+    const userMessage: ChatMessage = {
+      id: `${taskId}-user-${createdAt}`,
+      role: "user",
+      content: message,
+      created_at: createdAt
+    };
+    const pendingMessage: ChatMessage = {
+      id: `${taskId}-pending-${createdAt}`,
+      role: "assistant",
+      content: "Codex가 응답을 준비하고 있습니다.",
+      created_at: createdAt,
+      status: "sending"
+    };
+
+    setError(null);
+    setSendingTaskId(taskId);
+    setChatMessagesByTask((current) => {
+      const existing = current[taskId] ?? [createIntroMessage(selectedTask)];
+      return {
+        ...current,
+        [taskId]: [...existing, userMessage, pendingMessage]
+      };
+    });
+
+    try {
+      const response = await api.sendTaskMessage(taskId, message);
+      const assistantMessage: ChatMessage = {
+        id: `${taskId}-assistant-${Date.now()}`,
+        role: "assistant",
+        content: response.response_text ?? "응답은 완료되었지만 텍스트 출력이 비어 있습니다.",
+        created_at: new Date().toISOString()
+      };
+
+      setChatMessagesByTask((current) => ({
+        ...current,
+        [taskId]: (current[taskId] ?? []).filter((item) => item.id !== pendingMessage.id).concat(assistantMessage)
+      }));
+    } catch (caughtError) {
+      const messageText = caughtError instanceof Error ? caughtError.message : "메시지를 전송하지 못했습니다.";
+      setError(messageText);
+      setChatMessagesByTask((current) => ({
+        ...current,
+        [taskId]: (current[taskId] ?? []).map((item) =>
+          item.id === pendingMessage.id
+            ? {
+                ...item,
+                content: messageText,
+                status: "error"
+              }
+            : item
+        )
+      }));
+    } finally {
+      setSendingTaskId((current) => (current === taskId ? null : current));
+    }
+  }
+
+  async function handleCreateFromChat(message: string) {
+    const createdAt = new Date().toISOString();
+    const nextSchedule = draftSchedule.trim();
+
+    if (!nextSchedule) {
+      setError("schedule is required.");
+      return;
+    }
+
+    setError(null);
+    setSendingTaskId("draft");
+
+    try {
+      const createdTask = await api.createTask({
+        schedule: nextSchedule,
+        prompt: message
+      });
+
+      setSelectedTaskId(createdTask.id);
+      setViewMode("list");
+
+      const userMessage: ChatMessage = {
+        id: `${createdTask.id}-user-${createdAt}`,
+        role: "user",
+        content: message,
+        created_at: createdAt
+      };
+      const pendingMessage: ChatMessage = {
+        id: `${createdTask.id}-pending-${createdAt}`,
+        role: "assistant",
+        content: "Codex가 응답을 준비하고 있습니다.",
+        created_at: createdAt,
+        status: "sending"
+      };
+
+      setChatMessagesByTask((current) => ({
+        ...current,
+        [createdTask.id]: [createIntroMessage(createdTask), userMessage, pendingMessage]
+      }));
+
+      const response = await api.sendTaskMessage(createdTask.id, message);
+      const assistantMessage: ChatMessage = {
+        id: `${createdTask.id}-assistant-${Date.now()}`,
+        role: "assistant",
+        content: response.response_text ?? "응답은 완료되었지만 텍스트 출력이 비어 있습니다.",
+        created_at: new Date().toISOString()
+      };
+
+      setChatMessagesByTask((current) => ({
+        ...current,
+        [createdTask.id]: (current[createdTask.id] ?? []).filter((item) => item.id !== pendingMessage.id).concat(assistantMessage)
+      }));
+
+      setDraftSchedule("*/5 * * * *");
+      await refresh(createdTask.id);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Task를 생성하지 못했습니다.");
+    } finally {
+      setSendingTaskId((current) => (current === "draft" ? null : current));
+    }
+  }
+
+  return (
+    <div className="app-shell app-shell-chat">
       {error ? <div className="error-banner">{error}</div> : null}
 
-      <main className="layout">
-        <div className="left-column">
-          {isCreateOpen ? (
-            <TaskForm
-              mode="create"
-              initialTask={null}
-              onSubmit={handleSubmit}
-              onCancelEdit={() => setIsCreateOpen(false)}
-            />
-          ) : null}
-          {editingTask ? (
+      <main className="chat-layout">
+        <aside className="sidebar">
+          <section className="sidebar-header panel panel-hero">
+            <p className="eyebrow">codex-scheduler</p>
+            <h1>Task cockpit</h1>
+            <p className="hero-copy">
+              스케줄 단위로 Codex thread를 운용하고, 같은 컨텍스트를 유지한 채 실행 이력과 대화를 함께 관리합니다.
+            </p>
+            <div className="hero-stat-grid">
+              <div className="hero-stat-card">
+                <span>전체 Task</span>
+                <strong>{tasks.length}</strong>
+              </div>
+              <div className="hero-stat-card">
+                <span>활성 Task</span>
+                <strong>{tasks.filter((task) => task.enabled).length}</strong>
+              </div>
+            </div>
+            <button
+              className="primary-button sidebar-create-button"
+              type="button"
+              onClick={() => {
+                setEditingTask(null);
+                setSelectedTaskId(null);
+                setDraftSchedule("*/5 * * * *");
+                setViewMode("create");
+              }}
+            >
+              New Task
+            </button>
+            <p className="sidebar-stats">왼쪽에서는 작업 대상을 고르고, 오른쪽에서는 thread 기반 대화와 실행 이력을 이어갑니다.</p>
+          </section>
+
+          {viewMode === "edit" ? (
             <TaskForm
               mode="edit"
               initialTask={editingTask}
               onSubmit={handleSubmit}
-              onCancelEdit={() => setEditingTask(null)}
+              onCancelEdit={() => {
+                setEditingTask(null);
+                setViewMode("list");
+              }}
+              showBackButton={false}
             />
           ) : null}
-          <ExecutionHistory history={history} />
-        </div>
-        <TaskList
-          tasks={tasks}
-          selectedTaskId={selectedTaskId}
-          onEdit={(task) => {
-            setIsCreateOpen(false);
-            setEditingTask(task);
-          }}
-          onToggle={handleToggle}
-          onDelete={handleDelete}
-          onSelect={setSelectedTaskId}
-        />
+
+          <TaskList
+            tasks={tasks}
+            selectedTaskId={selectedTaskId}
+            onEdit={(task) => {
+              setEditingTask(task);
+              setViewMode("edit");
+            }}
+            onToggle={handleToggle}
+            onDelete={handleDelete}
+            onSelect={(taskId) => {
+              setSelectedTaskId(taskId);
+              setEditingTask(null);
+              setViewMode("list");
+            }}
+          />
+        </aside>
+
+        <section className="chat-main">
+          <section className="workspace-shell">
+            <header className="workspace-header panel">
+              <div>
+                <p className="stack-label">Workspace</p>
+                <h2>{viewMode === "create" ? "새 Task 시작" : selectedTask ? selectedTask.prompt : "Task 대화 영역"}</h2>
+                <p className="panel-subtitle">
+                  {viewMode === "create"
+                    ? "첫 메시지와 스케줄을 정하면 새 thread가 생성되고, 바로 같은 컨텍스트로 대화가 시작됩니다."
+                    : selectedTask
+                      ? "선택한 Task의 thread를 그대로 재사용해 Codex와 상호작용합니다."
+                      : "Task를 선택하면 이 영역에서 prompt, 대화, 실행 기록을 한 흐름으로 이어서 볼 수 있습니다."}
+                </p>
+              </div>
+              <div className="workspace-header-meta">
+                <span className="meta-pill">{viewMode === "create" ? "Draft session" : "Thread session"}</span>
+                <span className="meta-pill subtle">{selectedTask ? selectedTask.schedule : "schedule pending"}</span>
+              </div>
+            </header>
+
+            <div className="workspace-grid">
+              <TaskChat
+                mode={viewMode === "create" ? "create" : "chat"}
+                history={history}
+                selectedTask={selectedTask}
+                messages={selectedTaskMessages}
+                isSending={isChatSending}
+                draftSchedule={draftSchedule}
+                onDraftScheduleChange={setDraftSchedule}
+                onSendMessage={handleSendMessage}
+              />
+
+              <ExecutionPanel selectedTask={selectedTask} history={history} />
+            </div>
+          </section>
+        </section>
       </main>
     </div>
   );

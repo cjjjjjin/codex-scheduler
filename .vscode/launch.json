@@ -2,28 +2,30 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Backend: FastAPI",
-      "type": "debugpy",
+      "name": "Backend: Express",
+      "type": "node",
       "request": "launch",
-      "python": "${workspaceFolder}/backend/.venv/bin/python",
-      "module": "uvicorn",
       "cwd": "${workspaceFolder}/backend",
-      "args": [
-        "app.main:app",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "8000"
+      "program": "${workspaceFolder}/backend/dist/server.js",
+      "preLaunchTask": "backend: build",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/backend/dist/**/*.js"
       ],
-      "jinja": false,
-      "console": "integratedTerminal"
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
     },
     {
-      "name": "Backend: FastAPI (Reload)",
+      "name": "Backend: Express (Build/Run)",
       "type": "node-terminal",
       "request": "launch",
-      "command": "${workspaceFolder}/backend/.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
-      "cwd": "${workspaceFolder}/backend"
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "PORT": "8000"
+      }
     },
     {
       "name": "Frontend: Vite Dev Server",
@@ -44,7 +46,7 @@
     {
       "name": "Full Stack",
       "configurations": [
-        "Backend: FastAPI",
+        "Backend: Express",
         "Frontend: Vite Dev Server",
         "Frontend: Chrome"
       ],

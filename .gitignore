@@ -4,4 +4,4 @@ __pycache__/
 backend/data/
 frontend/node_modules/
 frontend/dist/
-codex-bridge/node_modules/
+backend/node_modules/

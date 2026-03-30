@@ -1,4 +1,4 @@
-import type { ExecutionRecord, Task, TaskInput } from "../types";
+import type { ExecutionRecord, Task, TaskChatResponse, TaskInput } from "../types";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ??
@@ -44,6 +44,11 @@ export const api = {
   deleteTask: (taskId: string) =>
     request<void>(`/tasks/${taskId}`, {
       method: "DELETE"
+    }),
+  sendTaskMessage: (taskId: string, message: string) =>
+    request<TaskChatResponse>(`/tasks/${taskId}/chat`, {
+      method: "POST",
+      body: JSON.stringify({ message })
     }),
   listExecutions: (taskId?: string) =>
     request<ExecutionRecord[]>(taskId ? `/executions?task_id=${taskId}` : "/executions")

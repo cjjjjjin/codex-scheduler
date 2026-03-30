@@ -29,42 +29,48 @@ export function TaskList({
   onSelect
 }: TaskListProps) {
   return (
-    <section className="panel">
-      <div className="panel-header">
-        <h2>Task 목록</h2>
-        <span className="meta">{tasks.length}개</span>
-      </div>
-      <div className="task-table">
-        <div className="task-table-header">
-          <span>상태</span>
-          <span>스케줄</span>
-          <span>Prompt</span>
-          <span>Session</span>
-          <span>다음 실행</span>
-          <span>작업</span>
+    <section className="task-list-panel">
+      <header className="stack-panel-header">
+        <div>
+          <p className="stack-label">Task Index</p>
+          <h3>등록된 Task</h3>
         </div>
+        <span className="stack-count">{tasks.length}</span>
+      </header>
+      <div className="task-list">
         {tasks.map((task) => (
           <article
             key={task.id}
-            className={`task-row ${selectedTaskId === task.id ? "selected" : ""}`}
+            className={`task-card ${selectedTaskId === task.id ? "selected" : ""}`}
             onClick={() => onSelect(task.id)}
           >
-            <div className="task-row-cell">
-              <span className={`status-chip ${task.enabled ? "enabled" : "disabled"}`}>
-                {task.enabled ? "Enabled" : "Disabled"}
-              </span>
+            <div className="task-card-main">
+              <div className="task-card-title-row">
+                <h2>{task.prompt}</h2>
+                <span className={`status-chip ${task.enabled ? "enabled" : "disabled"}`}>
+                  {task.enabled ? "활성" : "비활성"}
+                </span>
+              </div>
+              <div className="task-card-meta-row">
+                <span className="task-card-meta-label">스케줄</span>
+                <strong>{task.schedule}</strong>
+              </div>
+              <div className="task-card-info-grid">
+                <div>
+                  <span className="task-card-meta-label">Thread</span>
+                  <p title={task.thread_id}>{task.thread_id}</p>
+                </div>
+                <div>
+                  <span className="task-card-meta-label">Workspace</span>
+                  <p title={task.workspace_directory}>{task.workspace_directory}</p>
+                </div>
+                <div>
+                  <span className="task-card-meta-label">다음 실행</span>
+                  <p>{formatDateTime(task.next_run_at)}</p>
+                </div>
+              </div>
             </div>
-            <div className="task-row-cell">
-              <strong>{task.schedule}</strong>
-            </div>
-            <div className="task-row-cell task-row-prompt" title={task.prompt}>
-              {task.prompt}
-            </div>
-            <div className="task-row-cell task-row-session" title={task.session_id}>
-              {task.session_id}
-            </div>
-            <div className="task-row-cell">{formatDateTime(task.next_run_at)}</div>
-            <div className="task-row-cell task-actions">
+            <div className="task-actions">
               <button
                 className="ghost-button"
                 type="button"
@@ -98,7 +104,12 @@ export function TaskList({
             </div>
           </article>
         ))}
-        {tasks.length === 0 ? <p className="empty-state">등록된 Task가 없습니다.</p> : null}
+        {tasks.length === 0 ? (
+          <section className="panel empty-panel">
+            <p className="empty-title">등록된 Task가 없습니다</p>
+            <p className="empty-state">첫 번째 Task를 만들어 스케줄 실행을 시작하세요.</p>
+          </section>
+        ) : null}
       </div>
     </section>
   );

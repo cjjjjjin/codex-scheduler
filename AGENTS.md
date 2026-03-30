@@ -4,11 +4,13 @@
 
 작업을 시작하기 전에는 반드시 루트의 `MEMORY.md` 를 먼저 확인해 현재 결정 사항, 진행 상태, 미해결 리스크를 파악해야 한다. `MEMORY.md` 는 요약 메모이고, 최종 기준은 항상 `SPEC.md` 이다.
 
+문서 조사가 필요하거나 기존 설계 결정을 참조해야 할 때는 `doc/INDEX.md` 를 먼저 확인해 관련 문서를 찾는다.
+
 ## 프로젝트 목적
 
 이 프로젝트는 OpenAI Codex SDK를 사용해, 지정된 주기에 지정된 Codex thread로 Prompt를 전달하는 시스템이다.
 
-- Backend: Python + FastAPI
+- Backend: Node.js + Express
 - Frontend: TypeScript + React
 
 ## 핵심 도메인
@@ -52,12 +54,12 @@ Task 편집 시 수정 가능한 항목은 아래로 제한한다.
 - `enable=false` 인 Task는 스케줄 실행 대상에서 제외한다.
 - thread 생성 책임은 Task 생성 플로우에 포함한다.
 - thread ID는 Task 생성 후 시스템이 관리하는 값으로 취급한다.
-- 현재 backend가 Python이므로, Codex SDK 연동은 Node.js 기반 브리지 또는 별도 서비스 계층을 통해 구현하는 방향을 우선한다.
+- backend는 Node.js 런타임에서 Codex SDK를 직접 호출하는 방향을 우선한다.
 
 ## Backend 지침
 
-- FastAPI 기반으로 API를 설계한다.
-- Python 런타임은 `3.12` 계열을 사용한다.
+- Express 기반으로 API를 설계한다.
+- Node.js 런타임은 `18+` 를 기준으로 사용한다.
 - Task CRUD 및 enable/disable 변경 기능을 우선 제공한다.
 - 스케줄러는 저장된 Task 목록을 기준으로 동작해야 한다.
 - Codex 호출 로직은 스케줄러와 분리된 서비스 계층으로 구성하는 것을 우선한다.
@@ -90,6 +92,7 @@ Task 편집 시 수정 가능한 항목은 아래로 제한한다.
 - 새로운 디렉터리 구조나 런타임 의존성이 생기면 관련 문서도 함께 갱신한다.
 - `SPEC.md`에 없는 설계 결정은 코드 또는 별도 문서에 명시적으로 남긴다.
 - 추정이나 가정이 포함된 구현은 주석 또는 문서로 근거를 남긴다.
+- `doc/` 아래 문서를 추가하거나 갱신한 경우, `doc/INDEX.md` 도 함께 갱신해 문서 목록과 용도를 유지한다.
 
 ## 금지 사항
 
@@ -97,3 +100,26 @@ Task 편집 시 수정 가능한 항목은 아래로 제한한다.
 - 비활성화된 Task를 스케줄러가 실행하도록 구현하지 않는다.
 - Task 생성 시 Session 생성 단계를 생략하지 않는다.
 - Frontend에서 thread ID를 직접 입력받는 흐름을 기본 동작으로 만들지 않는다.
+
+
+## 참조용 프로젝트
+
+### `third-party/`
+외부 프로젝트
+해당 폴더 내의 코드를 수정하는 것은 허용되지 않으나 참조해서 사용하는 것은 권장
+
+#### `third-party/codex/`
+
+openai의 codex repository
+codex와의 연동을 참조 할 것
+
+#### `third-party/opencode/`
+
+opencode의 repository
+Frontend는 이 프로젝트를 참조 할 것
+
+## 문서 참조
+
+- 루트 문서 우선순위는 `SPEC.md` -> `MEMORY.md` -> `README.md` 이다.
+- `doc/` 아래 세부 조사 문서는 `doc/INDEX.md` 를 통해 찾아본다.
+- Codex 관련 설계 판단 전에는 가능하면 `doc/` 내 기존 조사 문서 존재 여부를 먼저 확인한다.
