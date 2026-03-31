@@ -1,8 +1,9 @@
-import type { Task } from "../types";
+import type { Task, TaskSessionMeta } from "../types";
 
 type TaskListProps = {
   tasks: Task[];
   selectedTaskId: string | null;
+  sessionMetaByTask: Record<string, TaskSessionMeta>;
   onEdit: (task: Task) => void;
   onToggle: (task: Task) => Promise<void>;
   onDelete: (taskId: string) => Promise<void>;
@@ -20,7 +21,19 @@ function formatDateTime(value: string | null) {
   }).format(new Date(value));
 }
 
-export function TaskList({ tasks, selectedTaskId, onEdit, onToggle, onDelete, onSelect }: TaskListProps) {
+function formatSessionMeta(meta?: TaskSessionMeta) {
+  if (!meta) {
+    return "세션 기록 없음";
+  }
+
+  if (!meta.last_message_at) {
+    return `${meta.message_count} messages`;
+  }
+
+  return `${meta.message_count} messages · ${formatDateTime(meta.last_message_at)}`;
+}
+
+export function TaskList({ tasks, selectedTaskId, sessionMetaByTask, onEdit, onToggle, onDelete, onSelect }: TaskListProps) {
   return (
     <section className="task-list-panel">
       <header className="stack-panel-header">
@@ -33,6 +46,7 @@ export function TaskList({ tasks, selectedTaskId, onEdit, onToggle, onDelete, on
       <div className="task-list">
         {tasks.map((task) => {
           const isSelected = selectedTaskId === task.id;
+          const sessionMeta = sessionMetaByTask[task.id];
 
           return (
             <article
@@ -56,6 +70,10 @@ export function TaskList({ tasks, selectedTaskId, onEdit, onToggle, onDelete, on
                 <div className="task-card-meta-row task-card-schedule-row">
                   <span className="task-card-meta-label">스케줄</span>
                   <code>{task.schedule}</code>
+                </div>
+                <div className="task-card-session-row">
+                  <span className="task-card-meta-label">Session</span>
+                  <span>{formatSessionMeta(sessionMeta)}</span>
                 </div>
                 <div className="task-card-info-grid">
                   <div>

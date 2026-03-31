@@ -5,13 +5,14 @@ import { ExecutionPanel } from "./components/ExecutionPanel";
 import { TaskChat } from "./components/TaskChat";
 import { TaskForm } from "./components/TaskForm";
 import { TaskList } from "./components/TaskList";
-import type { ExecutionRecord, Task, TaskInput } from "./types";
+import type { ExecutionRecord, Task, TaskInput, TaskSessionMeta } from "./types";
 
 type ViewMode = "list" | "create" | "edit";
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [history, setHistory] = useState<ExecutionRecord[]>([]);
+  const [sessionMetaByTask, setSessionMetaByTask] = useState<Record<string, TaskSessionMeta>>({});
   const [sendingTaskId, setSendingTaskId] = useState<string | null>(null);
   const [draftSchedule, setDraftSchedule] = useState("*/5 * * * *");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -107,11 +108,7 @@ export default function App() {
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) ?? null;
   const isChatSending = sendingTaskId === "draft";
 
-  async function handleSendMessage(message: string) {
-    await handleCreateFromChat(message);
-  }
-
-  async function handleCreateFromChat(message: string) {
+  async function handleCreateTaskFromMessage(message: string) {
     const nextSchedule = draftSchedule.trim();
 
     if (!nextSchedule) {
@@ -144,6 +141,20 @@ export default function App() {
     } finally {
       setSendingTaskId((current) => (current === "draft" ? null : current));
     }
+  }
+
+  function handleSessionMetaChange(taskId: string, meta: TaskSessionMeta) {
+    setSessionMetaByTask((current) => {
+      const previous = current[taskId];
+      if (previous && previous.message_count === meta.message_count && previous.last_message_at === meta.last_message_at) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [taskId]: meta
+      };
+    });
   }
 
   return (
@@ -199,6 +210,7 @@ export default function App() {
           <TaskList
             tasks={tasks}
             selectedTaskId={selectedTaskId}
+            sessionMetaByTask={sessionMetaByTask}
             onEdit={(task) => {
               setEditingTask(task);
               setViewMode("edit");
@@ -241,7 +253,8 @@ export default function App() {
                 isSending={isChatSending}
                 draftSchedule={draftSchedule}
                 onDraftScheduleChange={setDraftSchedule}
-                onSendMessage={handleSendMessage}
+                onCreateTaskFromMessage={handleCreateTaskFromMessage}
+                onSessionMetaChange={handleSessionMetaChange}
               />
 
               <ExecutionPanel selectedTask={selectedTask} history={history} />

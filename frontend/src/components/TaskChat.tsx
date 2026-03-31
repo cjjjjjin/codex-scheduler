@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useRef, useState, type FormEvent } from "react";
 
-import type { ExecutionRecord, Task } from "../types";
+import type { ExecutionRecord, Task, TaskSessionMeta } from "../types";
 
 const AssistantTaskThread = lazy(async () => {
   const module = await import("./AssistantTaskThread");
@@ -14,7 +14,8 @@ type TaskChatProps = {
   isSending: boolean;
   draftSchedule: string;
   onDraftScheduleChange: (value: string) => void;
-  onSendMessage: (message: string) => Promise<void>;
+  onCreateTaskFromMessage: (message: string) => Promise<void>;
+  onSessionMetaChange: (taskId: string, meta: TaskSessionMeta) => void;
 };
 
 function formatDateTime(value: string) {
@@ -52,7 +53,8 @@ export function TaskChat({
   isSending,
   draftSchedule,
   onDraftScheduleChange,
-  onSendMessage
+  onCreateTaskFromMessage,
+  onSessionMetaChange
 }: TaskChatProps) {
   const [draft, setDraft] = useState("");
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
@@ -71,12 +73,12 @@ export function TaskChat({
     event.preventDefault();
 
     const nextMessage = draft.trim();
-    if ((!selectedTask && mode !== "create") || !nextMessage || isSending) {
+    if (mode !== "create" || !nextMessage || isSending) {
       return;
     }
 
     setDraft("");
-    await onSendMessage(nextMessage);
+    await onCreateTaskFromMessage(nextMessage);
   }
 
   if (mode === "create") {
@@ -238,7 +240,7 @@ export function TaskChat({
 
       <div className="chat-thread assistant-chat-thread">
         <Suspense fallback={<SessionThreadLoading task={selectedTask} />}>
-          <AssistantTaskThread task={selectedTask} />
+          <AssistantTaskThread task={selectedTask} onMetaChange={onSessionMetaChange} />
         </Suspense>
       </div>
 

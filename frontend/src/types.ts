@@ -23,6 +23,11 @@ export type ChatMessage = {
   status?: "sending" | "error";
 };
 
+export type TaskSessionMeta = {
+  message_count: number;
+  last_message_at: string | null;
+};
+
 export type ExecutionRecord = {
   id: number;
   task_id: string;

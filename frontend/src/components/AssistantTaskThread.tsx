@@ -1,13 +1,14 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
-import { AssistantRuntimeProvider, ThreadPrimitive, useLocalRuntime, useMessage, type ChatModelAdapter, type ThreadMessage } from "@assistant-ui/react";
+import { AssistantRuntimeProvider, ThreadPrimitive, useLocalRuntime, useMessage, useThread, type ChatModelAdapter, type ThreadMessage } from "@assistant-ui/react";
 import { Thread, makeMarkdownText } from "@assistant-ui/react-ui";
 
 import { api } from "../api/client";
-import type { Task } from "../types";
+import type { Task, TaskSessionMeta } from "../types";
 
 type AssistantTaskThreadProps = {
   task: Task;
+  onMetaChange: (taskId: string, meta: TaskSessionMeta) => void;
 };
 
 const MarkdownText = makeMarkdownText();
@@ -98,7 +99,27 @@ function toMessageText(message: ThreadMessage) {
     .join("\n\n");
 }
 
-function TaskThreadRuntime({ task }: AssistantTaskThreadProps) {
+function TaskThreadMetaSync({ taskId, onMetaChange }: Pick<AssistantTaskThreadProps, "onMetaChange"> & { taskId: string }) {
+  const messageCount = useThread((state) => state.messages.filter((message) => message.role === "assistant" || message.role === "user").length);
+  const lastMessageAt = useThread((state) => {
+    const lastMessage = [...state.messages]
+      .reverse()
+      .find((message) => message.role === "assistant" || message.role === "user");
+
+    return lastMessage?.createdAt instanceof Date ? lastMessage.createdAt.toISOString() : null;
+  });
+
+  useEffect(() => {
+    onMetaChange(taskId, {
+      message_count: messageCount,
+      last_message_at: lastMessageAt
+    });
+  }, [lastMessageAt, messageCount, onMetaChange, taskId]);
+
+  return null;
+}
+
+function TaskThreadRuntime({ task, onMetaChange }: AssistantTaskThreadProps) {
   const model = useMemo<ChatModelAdapter>(
     () => ({
       async run({ messages: threadMessages, abortSignal }) {
@@ -123,6 +144,7 @@ function TaskThreadRuntime({ task }: AssistantTaskThreadProps) {
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
+      <TaskThreadMetaSync taskId={task.id} onMetaChange={onMetaChange} />
       <div className="task-session-shell">
         <Thread
           assistantAvatar={{ fallback: "C" }}
