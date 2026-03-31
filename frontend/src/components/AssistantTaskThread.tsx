@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 
-import { AssistantRuntimeProvider, ThreadPrimitive, useLocalRuntime, useThread, type ChatModelAdapter, type ThreadMessage, type ThreadMessageLike } from "@assistant-ui/react";
-import { Thread } from "@assistant-ui/react-ui";
+import { AssistantRuntimeProvider, ThreadPrimitive, useLocalRuntime, useMessage, useThread, type ChatModelAdapter, type ThreadMessage, type ThreadMessageLike } from "@assistant-ui/react";
+import { Thread, makeMarkdownText } from "@assistant-ui/react-ui";
 
 import { api } from "../api/client";
 import type { ChatMessage, Task } from "../types";
@@ -11,6 +11,34 @@ type AssistantTaskThreadProps = {
   messages: ChatMessage[];
   onSyncMessages: (taskId: string, messages: ChatMessage[]) => void;
 };
+
+const MarkdownText = makeMarkdownText();
+
+function formatTime(value: Date | undefined) {
+  if (!value) {
+    return "time unknown";
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(value);
+}
+
+function AssistantMessageFooter({ task }: { task: Task }) {
+  const status = useMessage((state) => state.status);
+  const createdAt = useMessage((state) => state.createdAt);
+  const statusLabel = status?.type === "running" ? "responding" : "completed";
+
+  return (
+    <div className="task-assistant-footer">
+      <span className="task-assistant-footer-pill">thread session</span>
+      <span className="task-assistant-footer-pill task-card-mono">{task.thread_id.slice(0, 12)}</span>
+      <span className="task-assistant-footer-meta">{statusLabel}</span>
+      <span className="task-assistant-footer-meta">{formatTime(createdAt)}</span>
+    </div>
+  );
+}
 
 function TaskWelcome({ task }: { task: Task }) {
   const suggestions = task.enabled
@@ -159,7 +187,11 @@ function TaskThreadRuntime({ task, messages, onSyncMessages }: AssistantTaskThre
             allowReload: false,
             allowSpeak: false,
             allowFeedbackPositive: false,
-            allowFeedbackNegative: false
+            allowFeedbackNegative: false,
+            components: {
+              Text: MarkdownText,
+              Footer: () => <AssistantMessageFooter task={task} />
+            }
           }}
           components={{
             ThreadWelcome: () => <TaskWelcome task={task} />

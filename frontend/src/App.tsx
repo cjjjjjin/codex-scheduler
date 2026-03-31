@@ -120,6 +120,7 @@ export default function App() {
 
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) ?? null;
   const selectedTaskMessages = selectedTask ? ensureTaskChat(selectedTask) : [];
+  const messageCountByTask = Object.fromEntries(tasks.map((task) => [task.id, ensureTaskChat(task).length]));
   const isChatSending =
     (selectedTaskId !== null && sendingTaskId === selectedTaskId) || sendingTaskId === "draft";
 
@@ -314,6 +315,8 @@ export default function App() {
           <TaskList
             tasks={tasks}
             selectedTaskId={selectedTaskId}
+            sendingTaskId={sendingTaskId}
+            messageCountByTask={messageCountByTask}
             onEdit={(task) => {
               setEditingTask(task);
               setViewMode("edit");

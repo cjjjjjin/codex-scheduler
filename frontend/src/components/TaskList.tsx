@@ -3,6 +3,8 @@ import type { Task } from "../types";
 type TaskListProps = {
   tasks: Task[];
   selectedTaskId: string | null;
+  sendingTaskId: string | null;
+  messageCountByTask: Record<string, number>;
   onEdit: (task: Task) => void;
   onToggle: (task: Task) => Promise<void>;
   onDelete: (taskId: string) => Promise<void>;
@@ -23,6 +25,8 @@ function formatDateTime(value: string | null) {
 export function TaskList({
   tasks,
   selectedTaskId,
+  sendingTaskId,
+  messageCountByTask,
   onEdit,
   onToggle,
   onDelete,
@@ -39,16 +43,26 @@ export function TaskList({
       </header>
       <div className="task-list">
         {tasks.map((task) => (
+          (() => {
+            const messageCount = messageCountByTask[task.id] ?? 0;
+            const isSelected = selectedTaskId === task.id;
+            const isRunning = sendingTaskId === task.id;
+
+            return (
           <article
             key={task.id}
-            className={`task-card ${selectedTaskId === task.id ? "selected" : ""}`}
+            className={`task-card ${isSelected ? "selected" : ""}`}
             onClick={() => onSelect(task.id)}
           >
             <div className="task-card-topline">
               <span className="task-card-id">{task.id.slice(0, 8)}</span>
-              <span className={`status-chip ${task.enabled ? "enabled" : "disabled"}`}>
-                {task.enabled ? "활성" : "비활성"}
-              </span>
+              <div className="task-card-topline-pills">
+                {isRunning ? <span className="task-session-chip running">live</span> : null}
+                {isSelected ? <span className="task-session-chip selected">open</span> : null}
+                <span className={`status-chip ${task.enabled ? "enabled" : "disabled"}`}>
+                  {task.enabled ? "활성" : "비활성"}
+                </span>
+              </div>
             </div>
             <div className="task-card-main">
               <div className="task-card-title-row">
@@ -57,6 +71,10 @@ export function TaskList({
               <div className="task-card-meta-row task-card-schedule-row">
                 <span className="task-card-meta-label">스케줄</span>
                 <code>{task.schedule}</code>
+              </div>
+              <div className="task-card-session-row">
+                <span className="task-card-meta-label">Session</span>
+                <span>{messageCount} messages</span>
               </div>
               <div className="task-card-info-grid">
                 <div>
@@ -106,6 +124,8 @@ export function TaskList({
               </button>
             </div>
           </article>
+            );
+          })()
         ))}
         {tasks.length === 0 ? (
           <section className="panel empty-panel">

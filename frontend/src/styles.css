@@ -398,6 +398,13 @@ a {
   gap: 8px;
 }
 
+.task-card-topline-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .task-card-id,
 .task-card-mono,
 .task-card-meta-row code {
@@ -436,6 +443,37 @@ a {
 
 .task-card-schedule-row {
   flex-wrap: wrap;
+}
+
+.task-card-session-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-base);
+  font-size: 0.84rem;
+}
+
+.task-session-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.task-session-chip.running {
+  background: var(--surface-brand);
+  color: var(--text-strong);
+}
+
+.task-session-chip.selected {
+  background: var(--surface-selected);
+  color: var(--text-interactive);
 }
 
 .task-card-meta-row strong {
@@ -695,6 +733,35 @@ a {
 .task-session-shell .aui-composer-root,
 .task-session-shell .aui-edit-composer-root {
   background: var(--background-strong);
+}
+
+.task-assistant-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-base);
+}
+
+.task-assistant-footer-pill,
+.task-assistant-footer-meta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+}
+
+.task-assistant-footer-pill {
+  padding: 0 8px;
+  background: var(--background-weak);
+  color: var(--text-strong);
+}
+
+.task-assistant-footer-meta {
+  color: var(--text-muted);
 }
 
 .task-session-shell .aui-composer-input,
