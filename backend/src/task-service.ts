@@ -2,16 +2,32 @@ import { DEFAULT_WORKSPACE_DIRECTORY } from "./config.js";
 import { AppError, CodexServiceError } from "./errors.js";
 import { getNextRunAt, nowInAppTimezone, validateSchedule } from "./schedule-utils.js";
 import type { CodexService } from "./codex-service.js";
+import type { SkillService } from "./skill-service.js";
 import type { TaskRepository } from "./task-repository.js";
-import type { TaskChatPayload, TaskEnabledPayload, TaskPayload } from "./types.js";
+import type { TaskChatPayload, TaskEnabledPayload, TaskPayload, TaskSettingsPayload } from "./types.js";
+
+function normalizeEnvironmentVariables(value: Record<string, string> | undefined): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter((entry): entry is [string, string] => typeof entry[0] === "string" && typeof entry[1] === "string")
+      .map(([key, entryValue]) => [key.trim(), entryValue])
+      .filter(([key]) => key.length > 0)
+  );
+}
 
 export class TaskService {
   taskRepository: TaskRepository;
   codexService: CodexService;
+  skillService: SkillService;
 
-  constructor(taskRepository: TaskRepository, codexService: CodexService) {
+  constructor(taskRepository: TaskRepository, codexService: CodexService, skillService: SkillService) {
     this.taskRepository = taskRepository;
     this.codexService = codexService;
+    this.skillService = skillService;
   }
 
   listTasks() {
@@ -29,28 +45,31 @@ export class TaskService {
   async createTask(payload: TaskPayload) {
     validateTaskPayload(payload);
 
+    try {
+      this.skillService.ensureTaskSettingsSkillInstalled(DEFAULT_WORKSPACE_DIRECTORY);
+    } catch (error) {
+      throw new AppError(
+        500,
+        `Failed to install default task skill: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+
     let threadId: string;
     try {
-      threadId = await this.codexService.createThread(DEFAULT_WORKSPACE_DIRECTORY);
+      threadId = await this.codexService.createThread(DEFAULT_WORKSPACE_DIRECTORY, normalizeEnvironmentVariables(payload.environment_variables));
     } catch (error) {
       const message = error instanceof CodexServiceError ? error.message : String(error);
       throw new AppError(502, `Failed to create Codex thread: ${message}`);
     }
 
-    const now = nowInAppTimezone();
-    const nextRunAt = getNextRunAt(payload.schedule, now);
-    return this.taskRepository.createTask({
-      schedule: payload.schedule.trim(),
-      threadId,
-      prompt: payload.prompt.trim(),
-      workspaceDirectory: DEFAULT_WORKSPACE_DIRECTORY,
-      enabled: true,
-      createdAt: now.toISOString(),
-      nextRunAt: nextRunAt.toISOString()
-    });
+    return this.createTaskRecord(threadId, payload);
   }
 
   updateTask(taskId: string, payload: TaskPayload) {
+    return this.updateTaskSettings(taskId, payload);
+  }
+
+  updateTaskSettings(taskId: string, payload: TaskSettingsPayload) {
     validateTaskPayload(payload);
     const task = this.getTask(taskId);
     const now = nowInAppTimezone();
@@ -58,8 +77,24 @@ export class TaskService {
     return this.taskRepository.updateTask(taskId, {
       schedule: payload.schedule.trim(),
       prompt: payload.prompt.trim(),
+      environmentVariables: normalizeEnvironmentVariables(payload.environment_variables),
       updatedAt: now.toISOString(),
       nextRunAt
+    });
+  }
+
+  private createTaskRecord(threadId: string, payload: TaskPayload) {
+    const now = nowInAppTimezone();
+    const nextRunAt = getNextRunAt(payload.schedule, now);
+    return this.taskRepository.createTask({
+      schedule: payload.schedule.trim(),
+      threadId,
+      prompt: payload.prompt.trim(),
+      workspaceDirectory: DEFAULT_WORKSPACE_DIRECTORY,
+      environmentVariables: normalizeEnvironmentVariables(payload.environment_variables),
+      enabled: true,
+      createdAt: now.toISOString(),
+      nextRunAt: nextRunAt.toISOString()
     });
   }
 
@@ -94,7 +129,7 @@ export class TaskService {
       throw new AppError(422, "message is required.");
     }
 
-    const result = await this.codexService.sendPrompt(task.thread_id, message, task.workspace_directory);
+    const result = await this.codexService.sendPrompt(task.thread_id, message, task.workspace_directory, task.environment_variables);
 
     if (!result.success) {
       throw new AppError(502, result.errorMessage ?? "Failed to send message to Codex.");
@@ -109,7 +144,7 @@ export class TaskService {
   }
 }
 
-function validateTaskPayload(payload: TaskPayload): void {
+function validateTaskPayload(payload: TaskPayload | TaskSettingsPayload): void {
   if (typeof payload?.schedule !== "string" || !payload.schedule.trim()) {
     throw new AppError(422, "schedule is required.");
   }
@@ -122,5 +157,21 @@ function validateTaskPayload(payload: TaskPayload): void {
     validateSchedule(payload.schedule.trim());
   } catch (error) {
     throw new AppError(422, error instanceof Error ? error.message : "Invalid CRON schedule.");
+  }
+
+  if (payload.environment_variables !== undefined) {
+    if (!payload.environment_variables || typeof payload.environment_variables !== "object" || Array.isArray(payload.environment_variables)) {
+      throw new AppError(422, "environment_variables must be an object.");
+    }
+
+    for (const [key, value] of Object.entries(payload.environment_variables)) {
+      if (!key.trim()) {
+        throw new AppError(422, "environment_variables keys must be non-empty strings.");
+      }
+
+      if (typeof value !== "string") {
+        throw new AppError(422, "environment_variables values must be strings.");
+      }
+    }
   }
 }

@@ -4,6 +4,7 @@ export type Task = {
   thread_id: string;
   prompt: string;
   workspace_directory: string;
+  environment_variables: Record<string, string>;
   enabled: boolean;
   created_at: string;
   updated_at: string;
@@ -26,6 +27,13 @@ export type ExecutionRecord = {
 export type TaskPayload = {
   schedule: string;
   prompt: string;
+  environment_variables?: Record<string, string>;
+};
+
+export type TaskSettingsPayload = {
+  schedule: string;
+  prompt: string;
+  environment_variables?: Record<string, string>;
 };
 
 export type TaskEnabledPayload = {

@@ -51,7 +51,8 @@ export class TaskScheduler {
         const result = await this.codexService.sendPrompt(
           task.thread_id,
           task.prompt,
-          task.workspace_directory
+          task.workspace_directory,
+          task.environment_variables
         );
 
         this.taskRepository.addExecution({

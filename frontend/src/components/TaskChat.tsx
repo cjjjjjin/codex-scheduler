@@ -13,7 +13,9 @@ type TaskChatProps = {
   history: ExecutionRecord[];
   isSending: boolean;
   draftSchedule: string;
+  draftEnvironmentVariables: string;
   onDraftScheduleChange: (value: string) => void;
+  onDraftEnvironmentVariablesChange: (value: string) => void;
   onCreateTaskFromMessage: (message: string) => Promise<void>;
   onSessionMetaChange: (taskId: string, meta: TaskSessionMeta) => void;
 };
@@ -52,7 +54,9 @@ export function TaskChat({
   history,
   isSending,
   draftSchedule,
+  draftEnvironmentVariables,
   onDraftScheduleChange,
+  onDraftEnvironmentVariablesChange,
   onCreateTaskFromMessage,
   onSessionMetaChange
 }: TaskChatProps) {
@@ -118,6 +122,17 @@ export function TaskChat({
             <p>서버 기본 workspace 사용</p>
           </div>
         </section>
+
+        <label className="field">
+          <span>환경 변수</span>
+          <textarea
+            value={draftEnvironmentVariables}
+            onChange={(event) => onDraftEnvironmentVariablesChange(event.target.value)}
+            rows={4}
+            placeholder={"KEY=value\nANOTHER_KEY=another value"}
+            disabled={isSending}
+          />
+        </label>
 
         <div className="chat-thread">
           <article className="chat-message assistant">

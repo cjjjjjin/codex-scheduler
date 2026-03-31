@@ -12,32 +12,65 @@ type TaskFormProps = {
 
 const EMPTY_FORM: TaskInput = {
   schedule: "*/5 * * * *",
-  prompt: ""
+  prompt: "",
+  environment_variables: {}
 };
+
+function serializeEnvironmentVariables(environmentVariables: Record<string, string>): string {
+  return Object.entries(environmentVariables)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+}
+
+function parseEnvironmentVariables(input: string): Record<string, string> {
+  return Object.fromEntries(
+    input
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .map((line) => {
+        const separatorIndex = line.indexOf("=");
+        if (separatorIndex === -1) {
+          return [line, ""];
+        }
+
+        return [line.slice(0, separatorIndex).trim(), line.slice(separatorIndex + 1)];
+      })
+      .filter(([key]) => key.length > 0)
+  );
+}
 
 export function TaskForm({ initialTask, onSubmit, onCancelEdit, mode, showBackButton = true }: TaskFormProps) {
   const [form, setForm] = useState<TaskInput>(EMPTY_FORM);
+  const [environmentVariablesText, setEnvironmentVariablesText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!initialTask) {
       setForm(EMPTY_FORM);
+      setEnvironmentVariablesText("");
       return;
     }
 
     setForm({
       schedule: initialTask.schedule,
-      prompt: initialTask.prompt
+      prompt: initialTask.prompt,
+      environment_variables: initialTask.environment_variables
     });
+    setEnvironmentVariablesText(serializeEnvironmentVariables(initialTask.environment_variables));
   }, [initialTask]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setSubmitting(true);
     try {
-      await onSubmit(form);
+      await onSubmit({
+        ...form,
+        environment_variables: parseEnvironmentVariables(environmentVariablesText)
+      });
       if (!initialTask) {
         setForm(EMPTY_FORM);
+        setEnvironmentVariablesText("");
       }
     } finally {
       setSubmitting(false);
@@ -88,6 +121,15 @@ export function TaskForm({ initialTask, onSubmit, onCancelEdit, mode, showBackBu
             onChange={(event) => setForm((prev) => ({ ...prev, schedule: event.target.value }))}
             placeholder="*/5 * * * *"
             required
+          />
+        </label>
+        <label className="field">
+          <span>환경 변수</span>
+          <textarea
+            value={environmentVariablesText}
+            onChange={(event) => setEnvironmentVariablesText(event.target.value)}
+            rows={6}
+            placeholder={"KEY=value\nANOTHER_KEY=another value"}
           />
         </label>
         {initialTask ? (

@@ -4,6 +4,25 @@ import type Database from "better-sqlite3";
 
 import type { ExecutionRecord, ExecutionStatus, Task } from "./types.js";
 
+function parseEnvironmentVariables(value: unknown): Record<string, string> {
+  if (typeof value !== "string" || !value.trim()) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsed).filter((entry): entry is [string, string] => typeof entry[0] === "string" && typeof entry[1] === "string")
+    );
+  } catch {
+    return {};
+  }
+}
+
 function parseTaskRow(row: Record<string, unknown> | undefined): Task | null {
   if (!row) {
     return null;
@@ -15,6 +34,7 @@ function parseTaskRow(row: Record<string, unknown> | undefined): Task | null {
     thread_id: String(row.thread_id),
     prompt: String(row.prompt),
     workspace_directory: String(row.workspace_directory),
+    environment_variables: parseEnvironmentVariables(row.environment_variables),
     enabled: Boolean(row.enabled),
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
@@ -40,6 +60,7 @@ type CreateTaskParams = {
   threadId: string;
   prompt: string;
   workspaceDirectory: string;
+  environmentVariables: Record<string, string>;
   enabled: boolean;
   createdAt: string;
   nextRunAt: string | null;
@@ -48,6 +69,7 @@ type CreateTaskParams = {
 type UpdateTaskParams = {
   schedule: string;
   prompt: string;
+  environmentVariables: Record<string, string>;
   updatedAt: string;
   nextRunAt: string | null;
 };
@@ -83,13 +105,13 @@ export class TaskRepository {
     return parseTaskRow(row);
   }
 
-  createTask({ schedule, threadId, prompt, workspaceDirectory, enabled, createdAt, nextRunAt }: CreateTaskParams): Task {
+  createTask({ schedule, threadId, prompt, workspaceDirectory, environmentVariables, enabled, createdAt, nextRunAt }: CreateTaskParams): Task {
     const id = crypto.randomUUID();
     this.database
       .prepare(`
         INSERT INTO tasks (
-          id, schedule, thread_id, prompt, workspace_directory, enabled, created_at, updated_at, next_run_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          id, schedule, thread_id, prompt, workspace_directory, environment_variables, enabled, created_at, updated_at, next_run_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         id,
@@ -97,6 +119,7 @@ export class TaskRepository {
         threadId,
         prompt,
         workspaceDirectory,
+        JSON.stringify(environmentVariables),
         enabled ? 1 : 0,
         createdAt,
         createdAt,
@@ -105,14 +128,14 @@ export class TaskRepository {
     return this.getTask(id) as Task;
   }
 
-  updateTask(taskId: string, { schedule, prompt, updatedAt, nextRunAt }: UpdateTaskParams): Task | null {
+  updateTask(taskId: string, { schedule, prompt, environmentVariables, updatedAt, nextRunAt }: UpdateTaskParams): Task | null {
     this.database
       .prepare(`
         UPDATE tasks
-        SET schedule = ?, prompt = ?, updated_at = ?, next_run_at = ?
+        SET schedule = ?, prompt = ?, environment_variables = ?, updated_at = ?, next_run_at = ?
         WHERE id = ?
       `)
-      .run(schedule, prompt, updatedAt, nextRunAt, taskId);
+      .run(schedule, prompt, JSON.stringify(environmentVariables), updatedAt, nextRunAt, taskId);
     return this.getTask(taskId);
   }
 

@@ -11,9 +11,21 @@ function resolveWorkspaceDirectory(workspaceDirectory?: string): string {
   return workspaceDirectory ?? DEFAULT_WORKSPACE_DIRECTORY;
 }
 
+function resolveCodexEnv(environmentVariables?: Record<string, string>): Record<string, string> | undefined {
+  if (!environmentVariables || Object.keys(environmentVariables).length === 0) {
+    return undefined;
+  }
+
+  return Object.fromEntries(
+    Object.entries(process.env)
+      .filter((entry): entry is [string, string] => typeof entry[1] === "string")
+      .concat(Object.entries(environmentVariables))
+  );
+}
+
 export class CodexService {
-  async createThread(workspaceDirectory?: string): Promise<string> {
-    const codex = new Codex();
+  async createThread(workspaceDirectory?: string, environmentVariables?: Record<string, string>): Promise<string> {
+    const codex = new Codex({ env: resolveCodexEnv(environmentVariables) });
     const thread = codex.startThread({
       workingDirectory: resolveWorkspaceDirectory(workspaceDirectory)
     });
@@ -33,7 +45,12 @@ export class CodexService {
     return thread.id;
   }
 
-  async sendPrompt(threadId: string, prompt: string, workspaceDirectory?: string): Promise<CodexSendResult> {
+  async sendPrompt(
+    threadId: string,
+    prompt: string,
+    workspaceDirectory?: string,
+    environmentVariables?: Record<string, string>
+  ): Promise<CodexSendResult> {
     if (!threadId || !prompt.trim()) {
       return {
         success: false,
@@ -43,7 +60,7 @@ export class CodexService {
     }
 
     try {
-      const codex = new Codex();
+      const codex = new Codex({ env: resolveCodexEnv(environmentVariables) });
       const thread = codex.resumeThread(threadId, {
         workingDirectory: resolveWorkspaceDirectory(workspaceDirectory)
       });

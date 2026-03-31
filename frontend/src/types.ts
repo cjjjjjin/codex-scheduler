@@ -4,6 +4,7 @@ export type Task = {
   thread_id: string;
   prompt: string;
   workspace_directory: string;
+  environment_variables: Record<string, string>;
   enabled: boolean;
   created_at: string;
   updated_at: string;
@@ -13,6 +14,7 @@ export type Task = {
 export type TaskInput = {
   schedule: string;
   prompt: string;
+  environment_variables: Record<string, string>;
 };
 
 export type ChatMessage = {

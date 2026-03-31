@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   thread_id TEXT NOT NULL CHECK (length(trim(thread_id)) > 0),
   prompt TEXT NOT NULL CHECK (length(trim(prompt)) > 0),
   workspace_directory TEXT NOT NULL CHECK (length(trim(workspace_directory)) > 0),
+  environment_variables TEXT NOT NULL DEFAULT '{}',
   enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
@@ -48,11 +49,12 @@ function recreateTasksTable(database: Database.Database): void {
   const columns = getColumnNames(database, "tasks");
   const threadColumn = columns.has("thread_id") ? "thread_id" : "session_id";
   const usesWorkspaceColumn = columns.has("workspace_directory");
+  const usesEnvironmentVariablesColumn = columns.has("environment_variables");
 
   database.exec(TASKS_TABLE_SQL.replace("tasks", "tasks_new"));
   const insert = database.prepare(`
     INSERT INTO tasks_new (
-      id, schedule, thread_id, prompt, workspace_directory, enabled, created_at, updated_at, next_run_at
+      id, schedule, thread_id, prompt, workspace_directory, environment_variables, enabled, created_at, updated_at, next_run_at
     )
     SELECT
       id,
@@ -60,16 +62,21 @@ function recreateTasksTable(database: Database.Database): void {
       ${threadColumn},
       prompt,
       ${usesWorkspaceColumn ? "workspace_directory" : "?"},
+      ${usesEnvironmentVariablesColumn ? "environment_variables" : "?"},
       CASE WHEN enabled = 0 THEN 0 ELSE 1 END,
       created_at,
       updated_at,
       next_run_at
     FROM tasks
   `);
-  if (usesWorkspaceColumn) {
+  if (usesWorkspaceColumn && usesEnvironmentVariablesColumn) {
     insert.run();
-  } else {
+  } else if (usesWorkspaceColumn) {
+    insert.run("{}");
+  } else if (usesEnvironmentVariablesColumn) {
     insert.run(DEFAULT_WORKSPACE_DIRECTORY);
+  } else {
+    insert.run(DEFAULT_WORKSPACE_DIRECTORY, "{}");
   }
   database.exec("DROP TABLE tasks");
   database.exec("ALTER TABLE tasks_new RENAME TO tasks");
@@ -104,7 +111,7 @@ function ensureTables(database: Database.Database): void {
     database.exec(TASKS_TABLE_SQL);
   } else {
     const taskColumns = getColumnNames(database, "tasks");
-    if (!taskColumns.has("thread_id") || !taskColumns.has("workspace_directory") || taskColumns.has("session_id")) {
+    if (!taskColumns.has("thread_id") || !taskColumns.has("workspace_directory") || !taskColumns.has("environment_variables") || taskColumns.has("session_id")) {
       recreateTasksTable(database);
     }
   }

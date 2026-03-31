@@ -9,12 +9,31 @@ import type { ExecutionRecord, Task, TaskInput, TaskSessionMeta } from "./types"
 
 type ViewMode = "list" | "create" | "edit";
 
+function parseEnvironmentVariables(input: string): Record<string, string> {
+  return Object.fromEntries(
+    input
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .map((line) => {
+        const separatorIndex = line.indexOf("=");
+        if (separatorIndex === -1) {
+          return [line, ""];
+        }
+
+        return [line.slice(0, separatorIndex).trim(), line.slice(separatorIndex + 1)];
+      })
+      .filter(([key]) => key.length > 0)
+  );
+}
+
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [history, setHistory] = useState<ExecutionRecord[]>([]);
   const [sessionMetaByTask, setSessionMetaByTask] = useState<Record<string, TaskSessionMeta>>({});
   const [sendingTaskId, setSendingTaskId] = useState<string | null>(null);
   const [draftSchedule, setDraftSchedule] = useState("*/5 * * * *");
+  const [draftEnvironmentVariables, setDraftEnvironmentVariables] = useState("");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -122,7 +141,8 @@ export default function App() {
     try {
       const createdTask = await api.createTask({
         schedule: nextSchedule,
-        prompt: message
+        prompt: message,
+        environment_variables: parseEnvironmentVariables(draftEnvironmentVariables)
       });
 
       setSelectedTaskId(createdTask.id);
@@ -135,6 +155,7 @@ export default function App() {
       }
 
       setDraftSchedule("*/5 * * * *");
+      setDraftEnvironmentVariables("");
       await refresh(createdTask.id);
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Task를 생성하지 못했습니다.");
@@ -186,6 +207,7 @@ export default function App() {
                 setEditingTask(null);
                 setSelectedTaskId(null);
                 setDraftSchedule("*/5 * * * *");
+                setDraftEnvironmentVariables("");
                 setViewMode("create");
               }}
             >
@@ -252,7 +274,9 @@ export default function App() {
                 selectedTask={selectedTask}
                 isSending={isChatSending}
                 draftSchedule={draftSchedule}
+                draftEnvironmentVariables={draftEnvironmentVariables}
                 onDraftScheduleChange={setDraftSchedule}
+                onDraftEnvironmentVariablesChange={setDraftEnvironmentVariables}
                 onCreateTaskFromMessage={handleCreateTaskFromMessage}
                 onSessionMetaChange={handleSessionMetaChange}
               />
