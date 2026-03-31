@@ -1,15 +1,13 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 
-import { AssistantRuntimeProvider, ThreadPrimitive, useLocalRuntime, useMessage, useThread, type ChatModelAdapter, type ThreadMessage, type ThreadMessageLike } from "@assistant-ui/react";
+import { AssistantRuntimeProvider, ThreadPrimitive, useLocalRuntime, useMessage, type ChatModelAdapter, type ThreadMessage } from "@assistant-ui/react";
 import { Thread, makeMarkdownText } from "@assistant-ui/react-ui";
 
 import { api } from "../api/client";
-import type { ChatMessage, Task } from "../types";
+import type { Task } from "../types";
 
 type AssistantTaskThreadProps = {
   task: Task;
-  messages: ChatMessage[];
-  onSyncMessages: (taskId: string, messages: ChatMessage[]) => void;
 };
 
 const MarkdownText = makeMarkdownText();
@@ -89,21 +87,7 @@ function TaskWelcome({ task }: { task: Task }) {
   );
 }
 
-function toThreadMessages(messages: ChatMessage[]): ThreadMessageLike[] {
-  return messages.map((message) => ({
-    id: message.id,
-    role: message.role,
-    createdAt: new Date(message.created_at),
-    content: [
-      {
-        type: "text",
-        text: message.content
-      }
-    ]
-  }));
-}
-
-function toMessageText(message: ThreadMessage | ThreadMessageLike) {
+function toMessageText(message: ThreadMessage) {
   if (!Array.isArray(message.content)) {
     return "";
   }
@@ -114,31 +98,7 @@ function toMessageText(message: ThreadMessage | ThreadMessageLike) {
     .join("\n\n");
 }
 
-function toChatMessage(message: ThreadMessage | ThreadMessageLike): ChatMessage {
-  return {
-    id: message.id ?? crypto.randomUUID(),
-    role: message.role === "assistant" ? "assistant" : "user",
-    content: toMessageText(message),
-    created_at: (message.createdAt instanceof Date ? message.createdAt : new Date()).toISOString()
-  };
-}
-
-function ThreadStateSync({ taskId, onSyncMessages }: Pick<AssistantTaskThreadProps, "onSyncMessages"> & { taskId: string }) {
-  const threadMessages = useThread((state) => state.messages);
-
-  useEffect(() => {
-    onSyncMessages(
-      taskId,
-      threadMessages
-        .filter((message) => message.role === "assistant" || message.role === "user")
-        .map((message) => toChatMessage(message))
-    );
-  }, [onSyncMessages, taskId, threadMessages]);
-
-  return null;
-}
-
-function TaskThreadRuntime({ task, messages, onSyncMessages }: AssistantTaskThreadProps) {
+function TaskThreadRuntime({ task }: AssistantTaskThreadProps) {
   const model = useMemo<ChatModelAdapter>(
     () => ({
       async run({ messages: threadMessages, abortSignal }) {
@@ -159,13 +119,10 @@ function TaskThreadRuntime({ task, messages, onSyncMessages }: AssistantTaskThre
     [task.id]
   );
 
-  const runtime = useLocalRuntime(model, {
-    initialMessages: toThreadMessages(messages)
-  });
+  const runtime = useLocalRuntime(model);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ThreadStateSync taskId={task.id} onSyncMessages={onSyncMessages} />
       <div className="task-session-shell">
         <Thread
           assistantAvatar={{ fallback: "C" }}

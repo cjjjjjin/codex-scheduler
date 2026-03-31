@@ -5,23 +5,13 @@ import { ExecutionPanel } from "./components/ExecutionPanel";
 import { TaskChat } from "./components/TaskChat";
 import { TaskForm } from "./components/TaskForm";
 import { TaskList } from "./components/TaskList";
-import type { ChatMessage, ExecutionRecord, Task, TaskInput } from "./types";
+import type { ExecutionRecord, Task, TaskInput } from "./types";
 
 type ViewMode = "list" | "create" | "edit";
-
-function createIntroMessage(task: Task): ChatMessage {
-  return {
-    id: `${task.id}-intro`,
-    role: "assistant",
-    content: `Task "${task.prompt}"에 연결된 Codex thread입니다. 이 창에서 바로 대화를 이어갈 수 있습니다.`,
-    created_at: task.updated_at
-  };
-}
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [history, setHistory] = useState<ExecutionRecord[]>([]);
-  const [chatMessagesByTask, setChatMessagesByTask] = useState<Record<string, ChatMessage[]>>({});
   const [sendingTaskId, setSendingTaskId] = useState<string | null>(null);
   const [draftSchedule, setDraftSchedule] = useState("*/5 * * * *");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -70,10 +60,6 @@ export default function App() {
     await loadHistory(taskId ?? selectedTaskId);
   }
 
-  function ensureTaskChat(task: Task): ChatMessage[] {
-    return chatMessagesByTask[task.id] ?? [createIntroMessage(task)];
-  }
-
   async function handleSubmit(payload: TaskInput) {
     try {
       setError(null);
@@ -119,82 +105,13 @@ export default function App() {
   }
 
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) ?? null;
-  const selectedTaskMessages = selectedTask ? ensureTaskChat(selectedTask) : [];
-  const messageCountByTask = Object.fromEntries(tasks.map((task) => [task.id, ensureTaskChat(task).length]));
-  const isChatSending =
-    (selectedTaskId !== null && sendingTaskId === selectedTaskId) || sendingTaskId === "draft";
+  const isChatSending = sendingTaskId === "draft";
 
   async function handleSendMessage(message: string) {
-    if (viewMode === "create") {
-      await handleCreateFromChat(message);
-      return;
-    }
-
-    if (!selectedTask) {
-      return;
-    }
-
-    const taskId = selectedTask.id;
-    const createdAt = new Date().toISOString();
-    const userMessage: ChatMessage = {
-      id: `${taskId}-user-${createdAt}`,
-      role: "user",
-      content: message,
-      created_at: createdAt
-    };
-    const pendingMessage: ChatMessage = {
-      id: `${taskId}-pending-${createdAt}`,
-      role: "assistant",
-      content: "Codex가 응답을 준비하고 있습니다.",
-      created_at: createdAt,
-      status: "sending"
-    };
-
-    setError(null);
-    setSendingTaskId(taskId);
-    setChatMessagesByTask((current) => {
-      const existing = current[taskId] ?? [createIntroMessage(selectedTask)];
-      return {
-        ...current,
-        [taskId]: [...existing, userMessage, pendingMessage]
-      };
-    });
-
-    try {
-      const response = await api.sendTaskMessage(taskId, message);
-      const assistantMessage: ChatMessage = {
-        id: `${taskId}-assistant-${Date.now()}`,
-        role: "assistant",
-        content: response.response_text ?? "응답은 완료되었지만 텍스트 출력이 비어 있습니다.",
-        created_at: new Date().toISOString()
-      };
-
-      setChatMessagesByTask((current) => ({
-        ...current,
-        [taskId]: (current[taskId] ?? []).filter((item) => item.id !== pendingMessage.id).concat(assistantMessage)
-      }));
-    } catch (caughtError) {
-      const messageText = caughtError instanceof Error ? caughtError.message : "메시지를 전송하지 못했습니다.";
-      setError(messageText);
-      setChatMessagesByTask((current) => ({
-        ...current,
-        [taskId]: (current[taskId] ?? []).map((item) =>
-          item.id === pendingMessage.id
-            ? {
-                ...item,
-                content: messageText,
-                status: "error"
-              }
-            : item
-        )
-      }));
-    } finally {
-      setSendingTaskId((current) => (current === taskId ? null : current));
-    }
+    await handleCreateFromChat(message);
   }
 
   async function handleCreateFromChat(message: string) {
-    const createdAt = new Date().toISOString();
     const nextSchedule = draftSchedule.trim();
 
     if (!nextSchedule) {
@@ -214,37 +131,11 @@ export default function App() {
       setSelectedTaskId(createdTask.id);
       setViewMode("list");
 
-      const userMessage: ChatMessage = {
-        id: `${createdTask.id}-user-${createdAt}`,
-        role: "user",
-        content: message,
-        created_at: createdAt
-      };
-      const pendingMessage: ChatMessage = {
-        id: `${createdTask.id}-pending-${createdAt}`,
-        role: "assistant",
-        content: "Codex가 응답을 준비하고 있습니다.",
-        created_at: createdAt,
-        status: "sending"
-      };
-
-      setChatMessagesByTask((current) => ({
-        ...current,
-        [createdTask.id]: [createIntroMessage(createdTask), userMessage, pendingMessage]
-      }));
-
       const response = await api.sendTaskMessage(createdTask.id, message);
-      const assistantMessage: ChatMessage = {
-        id: `${createdTask.id}-assistant-${Date.now()}`,
-        role: "assistant",
-        content: response.response_text ?? "응답은 완료되었지만 텍스트 출력이 비어 있습니다.",
-        created_at: new Date().toISOString()
-      };
 
-      setChatMessagesByTask((current) => ({
-        ...current,
-        [createdTask.id]: (current[createdTask.id] ?? []).filter((item) => item.id !== pendingMessage.id).concat(assistantMessage)
-      }));
+      if (!response.response_text) {
+        setError("응답은 완료되었지만 텍스트 출력이 비어 있습니다.");
+      }
 
       setDraftSchedule("*/5 * * * *");
       await refresh(createdTask.id);
@@ -253,13 +144,6 @@ export default function App() {
     } finally {
       setSendingTaskId((current) => (current === "draft" ? null : current));
     }
-  }
-
-  function handleSyncMessages(taskId: string, nextMessages: ChatMessage[]) {
-    setChatMessagesByTask((current) => ({
-      ...current,
-      [taskId]: nextMessages
-    }));
   }
 
   return (
@@ -315,8 +199,6 @@ export default function App() {
           <TaskList
             tasks={tasks}
             selectedTaskId={selectedTaskId}
-            sendingTaskId={sendingTaskId}
-            messageCountByTask={messageCountByTask}
             onEdit={(task) => {
               setEditingTask(task);
               setViewMode("edit");
@@ -356,12 +238,10 @@ export default function App() {
                 mode={viewMode === "create" ? "create" : "chat"}
                 history={history}
                 selectedTask={selectedTask}
-                messages={selectedTaskMessages}
                 isSending={isChatSending}
                 draftSchedule={draftSchedule}
                 onDraftScheduleChange={setDraftSchedule}
                 onSendMessage={handleSendMessage}
-                onSyncMessages={handleSyncMessages}
               />
 
               <ExecutionPanel selectedTask={selectedTask} history={history} />

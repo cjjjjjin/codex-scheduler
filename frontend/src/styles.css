@@ -600,6 +600,49 @@ a {
   overflow: hidden;
 }
 
+.assistant-thread-loading {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.assistant-thread-loading-card,
+.assistant-thread-loading-block {
+  border: 1px solid var(--border-base);
+  border-radius: 14px;
+  background: var(--background-strong);
+}
+
+.assistant-thread-loading-card {
+  padding: 16px;
+}
+
+.assistant-thread-loading-card h3 {
+  margin: 6px 0 8px;
+  color: var(--text-strong);
+}
+
+.assistant-thread-loading-card p:last-child {
+  margin: 0;
+  color: var(--text-base);
+}
+
+.assistant-thread-loading-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.assistant-thread-loading-block {
+  min-height: 72px;
+  background: linear-gradient(90deg, rgba(243, 243, 243, 0.9), rgba(252, 252, 252, 1), rgba(243, 243, 243, 0.9));
+}
+
+.assistant-thread-loading-block-wide {
+  grid-column: 1 / -1;
+  min-height: 120px;
+}
+
 .task-session-shell {
   min-height: 100%;
 }
@@ -967,7 +1010,8 @@ a {
   .chat-context-bar,
   .activity-summary,
   .task-card-info-grid,
-  .task-thread-welcome-facts {
+  .task-thread-welcome-facts,
+  .assistant-thread-loading-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 

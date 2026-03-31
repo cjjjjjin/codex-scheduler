@@ -3,8 +3,6 @@ import type { Task } from "../types";
 type TaskListProps = {
   tasks: Task[];
   selectedTaskId: string | null;
-  sendingTaskId: string | null;
-  messageCountByTask: Record<string, number>;
   onEdit: (task: Task) => void;
   onToggle: (task: Task) => Promise<void>;
   onDelete: (taskId: string) => Promise<void>;
@@ -22,16 +20,7 @@ function formatDateTime(value: string | null) {
   }).format(new Date(value));
 }
 
-export function TaskList({
-  tasks,
-  selectedTaskId,
-  sendingTaskId,
-  messageCountByTask,
-  onEdit,
-  onToggle,
-  onDelete,
-  onSelect
-}: TaskListProps) {
+export function TaskList({ tasks, selectedTaskId, onEdit, onToggle, onDelete, onSelect }: TaskListProps) {
   return (
     <section className="task-list-panel">
       <header className="stack-panel-header">
@@ -42,91 +31,82 @@ export function TaskList({
         <span className="stack-count">{tasks.length}</span>
       </header>
       <div className="task-list">
-        {tasks.map((task) => (
-          (() => {
-            const messageCount = messageCountByTask[task.id] ?? 0;
-            const isSelected = selectedTaskId === task.id;
-            const isRunning = sendingTaskId === task.id;
+        {tasks.map((task) => {
+          const isSelected = selectedTaskId === task.id;
 
-            return (
-          <article
-            key={task.id}
-            className={`task-card ${isSelected ? "selected" : ""}`}
-            onClick={() => onSelect(task.id)}
-          >
-            <div className="task-card-topline">
-              <span className="task-card-id">{task.id.slice(0, 8)}</span>
-              <div className="task-card-topline-pills">
-                {isRunning ? <span className="task-session-chip running">live</span> : null}
-                {isSelected ? <span className="task-session-chip selected">open</span> : null}
-                <span className={`status-chip ${task.enabled ? "enabled" : "disabled"}`}>
-                  {task.enabled ? "활성" : "비활성"}
-                </span>
-              </div>
-            </div>
-            <div className="task-card-main">
-              <div className="task-card-title-row">
-                <h2>{task.prompt}</h2>
-              </div>
-              <div className="task-card-meta-row task-card-schedule-row">
-                <span className="task-card-meta-label">스케줄</span>
-                <code>{task.schedule}</code>
-              </div>
-              <div className="task-card-session-row">
-                <span className="task-card-meta-label">Session</span>
-                <span>{messageCount} messages</span>
-              </div>
-              <div className="task-card-info-grid">
-                <div>
-                  <span className="task-card-meta-label">Thread</span>
-                  <p className="task-card-mono" title={task.thread_id}>{task.thread_id}</p>
-                </div>
-                <div>
-                  <span className="task-card-meta-label">Workspace</span>
-                  <p title={task.workspace_directory}>{task.workspace_directory}</p>
-                </div>
-                <div>
-                  <span className="task-card-meta-label">다음 실행</span>
-                  <p>{formatDateTime(task.next_run_at)}</p>
+          return (
+            <article
+              key={task.id}
+              className={`task-card ${isSelected ? "selected" : ""}`}
+              onClick={() => onSelect(task.id)}
+            >
+              <div className="task-card-topline">
+                <span className="task-card-id">{task.id.slice(0, 8)}</span>
+                <div className="task-card-topline-pills">
+                  {isSelected ? <span className="task-session-chip selected">open</span> : null}
+                  <span className={`status-chip ${task.enabled ? "enabled" : "disabled"}`}>
+                    {task.enabled ? "활성" : "비활성"}
+                  </span>
                 </div>
               </div>
-            </div>
-            <div className="task-actions">
-              <button
-                className="ghost-button"
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onEdit(task);
-                }}
-              >
-                수정
-              </button>
-              <button
-                className="ghost-button"
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void onToggle(task);
-                }}
-              >
-                {task.enabled ? "비활성화" : "활성화"}
-              </button>
-              <button
-                className="danger-button"
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void onDelete(task.id);
-                }}
-              >
-                삭제
-              </button>
-            </div>
-          </article>
-            );
-          })()
-        ))}
+              <div className="task-card-main">
+                <div className="task-card-title-row">
+                  <h2>{task.prompt}</h2>
+                </div>
+                <div className="task-card-meta-row task-card-schedule-row">
+                  <span className="task-card-meta-label">스케줄</span>
+                  <code>{task.schedule}</code>
+                </div>
+                <div className="task-card-info-grid">
+                  <div>
+                    <span className="task-card-meta-label">Thread</span>
+                    <p className="task-card-mono" title={task.thread_id}>{task.thread_id}</p>
+                  </div>
+                  <div>
+                    <span className="task-card-meta-label">Workspace</span>
+                    <p title={task.workspace_directory}>{task.workspace_directory}</p>
+                  </div>
+                  <div>
+                    <span className="task-card-meta-label">다음 실행</span>
+                    <p>{formatDateTime(task.next_run_at)}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="task-actions">
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onEdit(task);
+                  }}
+                >
+                  수정
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void onToggle(task);
+                  }}
+                >
+                  {task.enabled ? "비활성화" : "활성화"}
+                </button>
+                <button
+                  className="danger-button"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void onDelete(task.id);
+                  }}
+                >
+                  삭제
+                </button>
+              </div>
+            </article>
+          );
+        })}
         {tasks.length === 0 ? (
           <section className="panel empty-panel">
             <p className="empty-title">등록된 Task가 없습니다</p>

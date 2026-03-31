@@ -1,18 +1,20 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Suspense, lazy, useEffect, useRef, useState, type FormEvent } from "react";
 
-import { AssistantTaskThread } from "./AssistantTaskThread";
-import type { ChatMessage, ExecutionRecord, Task } from "../types";
+import type { ExecutionRecord, Task } from "../types";
+
+const AssistantTaskThread = lazy(async () => {
+  const module = await import("./AssistantTaskThread");
+  return { default: module.AssistantTaskThread };
+});
 
 type TaskChatProps = {
   mode: "create" | "chat";
   selectedTask: Task | null;
   history: ExecutionRecord[];
-  messages: ChatMessage[];
   isSending: boolean;
   draftSchedule: string;
   onDraftScheduleChange: (value: string) => void;
   onSendMessage: (message: string) => Promise<void>;
-  onSyncMessages: (taskId: string, messages: ChatMessage[]) => void;
 };
 
 function formatDateTime(value: string) {
@@ -26,33 +28,38 @@ function formatRelativeTaskState(task: Task) {
   return task.enabled ? "Live thread" : "Paused thread";
 }
 
+function SessionThreadLoading({ task }: { task: Task }) {
+  return (
+    <div className="assistant-thread-loading">
+      <div className="assistant-thread-loading-card">
+        <p className="stack-label">Loading Session</p>
+        <h3>{task.prompt}</h3>
+        <p>assistant-ui workspace를 불러오는 중입니다. 선택한 Task의 thread session을 곧 이어서 표시합니다.</p>
+      </div>
+      <div className="assistant-thread-loading-grid">
+        <div className="assistant-thread-loading-block" />
+        <div className="assistant-thread-loading-block" />
+        <div className="assistant-thread-loading-block assistant-thread-loading-block-wide" />
+      </div>
+    </div>
+  );
+}
+
 export function TaskChat({
   mode,
   selectedTask,
   history,
-  messages,
   isSending,
   draftSchedule,
   onDraftScheduleChange,
-  onSendMessage,
-  onSyncMessages
+  onSendMessage
 }: TaskChatProps) {
   const [draft, setDraft] = useState("");
-  const messageListRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     setDraft("");
   }, [selectedTask?.id]);
-
-  useEffect(() => {
-    const node = messageListRef.current;
-    if (!node) {
-      return;
-    }
-
-    node.scrollTop = node.scrollHeight;
-  }, [messages, isSending]);
 
   useEffect(() => {
     if (!isSending) {
@@ -229,14 +236,15 @@ export function TaskChat({
         </div>
       </section>
 
-      <div ref={messageListRef} className="chat-thread assistant-chat-thread">
-        <AssistantTaskThread task={selectedTask} messages={messages} onSyncMessages={onSyncMessages} />
+      <div className="chat-thread assistant-chat-thread">
+        <Suspense fallback={<SessionThreadLoading task={selectedTask} />}>
+          <AssistantTaskThread task={selectedTask} />
+        </Suspense>
       </div>
 
       <footer className="chat-composer-shell assistant-chat-meta-shell">
         <div className="chat-composer-meta">
           <span>{history.length}개의 스케줄 실행 이력</span>
-          <span>{messages.length}개의 현재 세션 메시지</span>
           <span>{selectedTask.enabled ? "scheduler enabled" : "scheduler paused"}</span>
         </div>
       </footer>
