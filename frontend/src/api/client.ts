@@ -45,10 +45,11 @@ export const api = {
     request<void>(`/tasks/${taskId}`, {
       method: "DELETE"
     }),
-  sendTaskMessage: (taskId: string, message: string) =>
+  sendTaskMessage: (taskId: string, message: string, signal?: AbortSignal) =>
     request<TaskChatResponse>(`/tasks/${taskId}/chat`, {
       method: "POST",
-      body: JSON.stringify({ message })
+      body: JSON.stringify({ message }),
+      signal
     }),
   listExecutions: (taskId?: string) =>
     request<ExecutionRecord[]>(taskId ? `/executions?task_id=${taskId}` : "/executions")

@@ -48,13 +48,13 @@ export function TaskForm({ initialTask, onSubmit, onCancelEdit, mode, showBackBu
     <section className="form-shell">
       {showBackButton ? (
         <button className="back-button" type="button" onClick={onCancelEdit}>
-          목록으로 돌아가기
+          Task rail로 돌아가기
         </button>
       ) : null}
       <form className="panel form-panel" onSubmit={handleSubmit}>
         <div className="form-header">
           <div>
-            <p className="stack-label">Task Editor</p>
+            <p className="stack-label">Inspector</p>
             <h2>{mode === "edit" ? "Task 수정" : "새로운 Task 추가"}</h2>
             <p className="form-description">
               {mode === "edit"

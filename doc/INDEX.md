@@ -6,6 +6,12 @@
 
 ## 문서 목록
 
+### `ASSISTANT_UI_ADOPTION_PLAN.md`
+
+- 주제: `assistant-ui`를 현재 React frontend에 제한적으로 도입하기 위한 구현 계획
+- 용도: Chat workspace를 `assistant-ui` 기반으로 바꾸기 전 범위, 리스크, 단계별 실행 순서를 확인할 때 참고
+- 핵심 포인트: `Task Rail`과 scheduler 도메인은 유지하고 `TaskChat`의 session 영역만 우선 도입 대상으로 본다
+
 ### `CODEX_APP_SERVER_RESEARCH.md`
 
 - 주제: Codex App Server의 개념, 역할, 적용 적합성 조사

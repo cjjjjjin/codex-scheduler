@@ -32,7 +32,7 @@ export function TaskList({
     <section className="task-list-panel">
       <header className="stack-panel-header">
         <div>
-          <p className="stack-label">Task Index</p>
+          <p className="stack-label">Task Rail</p>
           <h3>등록된 Task</h3>
         </div>
         <span className="stack-count">{tasks.length}</span>
@@ -44,21 +44,24 @@ export function TaskList({
             className={`task-card ${selectedTaskId === task.id ? "selected" : ""}`}
             onClick={() => onSelect(task.id)}
           >
+            <div className="task-card-topline">
+              <span className="task-card-id">{task.id.slice(0, 8)}</span>
+              <span className={`status-chip ${task.enabled ? "enabled" : "disabled"}`}>
+                {task.enabled ? "활성" : "비활성"}
+              </span>
+            </div>
             <div className="task-card-main">
               <div className="task-card-title-row">
                 <h2>{task.prompt}</h2>
-                <span className={`status-chip ${task.enabled ? "enabled" : "disabled"}`}>
-                  {task.enabled ? "활성" : "비활성"}
-                </span>
               </div>
-              <div className="task-card-meta-row">
+              <div className="task-card-meta-row task-card-schedule-row">
                 <span className="task-card-meta-label">스케줄</span>
-                <strong>{task.schedule}</strong>
+                <code>{task.schedule}</code>
               </div>
               <div className="task-card-info-grid">
                 <div>
                   <span className="task-card-meta-label">Thread</span>
-                  <p title={task.thread_id}>{task.thread_id}</p>
+                  <p className="task-card-mono" title={task.thread_id}>{task.thread_id}</p>
                 </div>
                 <div>
                   <span className="task-card-meta-label">Workspace</span>
@@ -107,7 +110,7 @@ export function TaskList({
         {tasks.length === 0 ? (
           <section className="panel empty-panel">
             <p className="empty-title">등록된 Task가 없습니다</p>
-            <p className="empty-state">첫 번째 Task를 만들어 스케줄 실행을 시작하세요.</p>
+            <p className="empty-state">좌측 레일에 표시할 Task가 아직 없습니다. 첫 Task를 추가해 스케줄 실행을 시작하세요.</p>
           </section>
         ) : null}
       </div>

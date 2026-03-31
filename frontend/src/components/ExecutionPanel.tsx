@@ -17,7 +17,7 @@ export function ExecutionPanel({ selectedTask, history }: ExecutionPanelProps) {
     <section className="panel activity-panel">
       <header className="stack-panel-header">
         <div>
-          <p className="stack-label">Execution Feed</p>
+          <p className="stack-label">Activity</p>
           <h3>실행 이력</h3>
         </div>
         <span className="stack-count">{history.length}</span>
@@ -51,14 +51,16 @@ export function ExecutionPanel({ selectedTask, history }: ExecutionPanelProps) {
           history.map((record) => (
             <article key={record.id} className="activity-item">
               <div className="activity-item-header">
-                <span className={`status-dot ${record.status}`}></span>
-                <strong>{record.status === "success" ? "성공" : "실패"}</strong>
+                <div className="activity-item-status">
+                  <span className={`status-dot ${record.status}`}></span>
+                  <strong>{record.status === "success" ? "성공" : "실패"}</strong>
+                </div>
                 <time>{formatDateTime(record.executed_at)}</time>
               </div>
               <p className="activity-item-prompt">{record.prompt}</p>
               <div className="activity-item-meta">
                 <span>예정 시각 {formatDateTime(record.scheduled_for)}</span>
-                <span title={record.thread_id}>{record.thread_id}</span>
+                <span className="task-card-mono" title={record.thread_id}>{record.thread_id}</span>
               </div>
               {record.error_message ? <p className="activity-item-error">{record.error_message}</p> : null}
             </article>

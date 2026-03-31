@@ -254,6 +254,13 @@ export default function App() {
     }
   }
 
+  function handleSyncMessages(taskId: string, nextMessages: ChatMessage[]) {
+    setChatMessagesByTask((current) => ({
+      ...current,
+      [taskId]: nextMessages
+    }));
+  }
+
   return (
     <div className="app-shell app-shell-chat">
       {error ? <div className="error-banner">{error}</div> : null}
@@ -262,9 +269,9 @@ export default function App() {
         <aside className="sidebar">
           <section className="sidebar-header panel panel-hero">
             <p className="eyebrow">codex-scheduler</p>
-            <h1>Task cockpit</h1>
+            <h1>Workspace</h1>
             <p className="hero-copy">
-              스케줄 단위로 Codex thread를 운용하고, 같은 컨텍스트를 유지한 채 실행 이력과 대화를 함께 관리합니다.
+              opencode 스타일의 작업 레일을 기준으로, 스케줄 Task와 thread 대화를 한 화면에서 이어서 다룹니다.
             </p>
             <div className="hero-stat-grid">
               <div className="hero-stat-card">
@@ -288,7 +295,7 @@ export default function App() {
             >
               New Task
             </button>
-            <p className="sidebar-stats">왼쪽에서는 작업 대상을 고르고, 오른쪽에서는 thread 기반 대화와 실행 이력을 이어갑니다.</p>
+            <p className="sidebar-stats">왼쪽 레일에서 Task를 고르고, 오른쪽 작업 영역에서 thread와 실행 로그를 이어서 확인합니다.</p>
           </section>
 
           {viewMode === "edit" ? (
@@ -326,13 +333,13 @@ export default function App() {
             <header className="workspace-header panel">
               <div>
                 <p className="stack-label">Workspace</p>
-                <h2>{viewMode === "create" ? "새 Task 시작" : selectedTask ? selectedTask.prompt : "Task 대화 영역"}</h2>
+                <h2>{viewMode === "create" ? "새 Task 시작" : selectedTask ? selectedTask.prompt : "Task workspace"}</h2>
                 <p className="panel-subtitle">
                   {viewMode === "create"
-                    ? "첫 메시지와 스케줄을 정하면 새 thread가 생성되고, 바로 같은 컨텍스트로 대화가 시작됩니다."
+                    ? "첫 메시지와 스케줄을 정하면 새 thread가 생성되고 같은 흐름에서 바로 대화가 시작됩니다."
                     : selectedTask
-                      ? "선택한 Task의 thread를 그대로 재사용해 Codex와 상호작용합니다."
-                      : "Task를 선택하면 이 영역에서 prompt, 대화, 실행 기록을 한 흐름으로 이어서 볼 수 있습니다."}
+                      ? "선택한 Task의 thread를 재사용해 Codex와 상호작용합니다."
+                      : "Task를 선택하면 prompt, 대화, 실행 기록을 한 흐름으로 볼 수 있습니다."}
                 </p>
               </div>
               <div className="workspace-header-meta">
@@ -351,6 +358,7 @@ export default function App() {
                 draftSchedule={draftSchedule}
                 onDraftScheduleChange={setDraftSchedule}
                 onSendMessage={handleSendMessage}
+                onSyncMessages={handleSyncMessages}
               />
 
               <ExecutionPanel selectedTask={selectedTask} history={history} />

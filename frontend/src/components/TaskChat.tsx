@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
+import { AssistantTaskThread } from "./AssistantTaskThread";
 import type { ChatMessage, ExecutionRecord, Task } from "../types";
 
 type TaskChatProps = {
@@ -11,6 +12,7 @@ type TaskChatProps = {
   draftSchedule: string;
   onDraftScheduleChange: (value: string) => void;
   onSendMessage: (message: string) => Promise<void>;
+  onSyncMessages: (taskId: string, messages: ChatMessage[]) => void;
 };
 
 function formatDateTime(value: string) {
@@ -32,7 +34,8 @@ export function TaskChat({
   isSending,
   draftSchedule,
   onDraftScheduleChange,
-  onSendMessage
+  onSendMessage,
+  onSyncMessages
 }: TaskChatProps) {
   const [draft, setDraft] = useState("");
   const messageListRef = useRef<HTMLDivElement | null>(null);
@@ -74,7 +77,7 @@ export function TaskChat({
       <section className="chat-shell panel conversation-panel">
         <header className="chat-header">
           <div>
-            <p className="chat-label">New Task</p>
+            <p className="chat-label">New Session</p>
             <h2>첫 메시지로 Task 생성</h2>
             <p className="panel-subtitle">
               아래 첫 메시지를 보내면 새 Task가 생성되고, 생성된 thread에서 바로 Codex와 대화가 시작됩니다.
@@ -82,6 +85,7 @@ export function TaskChat({
           </div>
           <div className="chat-task-summary">
             <span className="chat-meta-pill">Draft</span>
+            <span className="chat-meta-pill subtle">pending thread</span>
           </div>
         </header>
 
@@ -114,7 +118,7 @@ export function TaskChat({
                 <strong>Codex</strong>
                 <span>준비됨</span>
               </div>
-              <p>Task를 시작할 첫 메시지를 입력하세요. 이 메시지는 Task의 기본 prompt로 저장되고, 같은 내용으로 첫 대화도 전송됩니다.</p>
+              <p>Task를 시작할 첫 메시지를 입력하세요. 이 메시지는 기본 prompt로 저장되고 같은 내용으로 첫 대화도 전송됩니다.</p>
             </div>
           </article>
         </div>
@@ -148,7 +152,7 @@ export function TaskChat({
       <section className="chat-shell panel conversation-panel">
         <header className="chat-header">
           <div>
-            <p className="chat-label">Task Conversation</p>
+            <p className="chat-label">Session</p>
             <h2>Task를 먼저 선택하세요</h2>
             <p className="panel-subtitle">
               왼쪽에서 Task를 선택하면 같은 thread에 이어서 대화할 수 있습니다. 새 Task를 만들고 싶다면 `New Task`를 눌러주세요.
@@ -196,7 +200,7 @@ export function TaskChat({
     <section className="chat-shell panel conversation-panel">
       <header className="chat-header">
         <div>
-          <p className="chat-label">Task Conversation</p>
+          <p className="chat-label">Session</p>
           <h2>{selectedTask.prompt}</h2>
           <p className="panel-subtitle">
             선택한 Task의 `thread_id`를 그대로 사용해 Codex와 대화합니다.
@@ -213,7 +217,7 @@ export function TaskChat({
       <section className="chat-context-bar">
         <div className="chat-context-card">
           <span className="task-card-meta-label">Thread</span>
-          <p title={selectedTask.thread_id}>{selectedTask.thread_id}</p>
+          <p className="task-card-mono" title={selectedTask.thread_id}>{selectedTask.thread_id}</p>
         </div>
         <div className="chat-context-card">
           <span className="task-card-meta-label">Workspace</span>
@@ -225,42 +229,16 @@ export function TaskChat({
         </div>
       </section>
 
-      <div ref={messageListRef} className="chat-thread">
-        {messages.map((message) => (
-          <article key={message.id} className={`chat-message ${message.role}`}>
-            <div className="chat-avatar">{message.role === "assistant" ? "C" : "U"}</div>
-            <div className={`chat-bubble ${message.role} ${message.status === "error" ? "error" : ""}`}>
-              <div className="chat-bubble-header">
-                <strong>{message.role === "assistant" ? "Codex" : "You"}</strong>
-                <span>{formatDateTime(message.created_at)}</span>
-              </div>
-              <p>{message.content}</p>
-              {message.status === "sending" ? <span className="chat-message-state">응답을 기다리는 중...</span> : null}
-            </div>
-          </article>
-        ))}
+      <div ref={messageListRef} className="chat-thread assistant-chat-thread">
+        <AssistantTaskThread task={selectedTask} messages={messages} onSyncMessages={onSyncMessages} />
       </div>
 
-      <footer className="chat-composer-shell">
-        <form className="chat-composer" onSubmit={(event) => void handleSubmit(event)}>
-            <textarea
-              ref={composerRef}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder="Codex에게 바로 물어보세요. 이 Task의 thread context를 이어서 사용합니다."
-            rows={4}
-            disabled={isSending}
-          />
-          <div className="chat-composer-actions">
-            <div className="chat-composer-meta">
-              <span>{history.length}개의 스케줄 실행 이력</span>
-              <span>{messages.length}개의 현재 세션 메시지</span>
-            </div>
-            <button className="primary-button" type="submit" disabled={isSending || !draft.trim()}>
-              {isSending ? "Sending..." : "Send"}
-            </button>
-          </div>
-        </form>
+      <footer className="chat-composer-shell assistant-chat-meta-shell">
+        <div className="chat-composer-meta">
+          <span>{history.length}개의 스케줄 실행 이력</span>
+          <span>{messages.length}개의 현재 세션 메시지</span>
+          <span>{selectedTask.enabled ? "scheduler enabled" : "scheduler paused"}</span>
+        </div>
       </footer>
     </section>
   );
