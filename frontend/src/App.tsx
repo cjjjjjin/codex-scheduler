@@ -184,67 +184,56 @@ export default function App() {
 
       <main className="chat-layout">
         <aside className="sidebar">
-          <section className="sidebar-header panel panel-hero">
-            <p className="eyebrow">codex-scheduler</p>
-            <h1>Workspace</h1>
-            <p className="hero-copy">
-              opencode 스타일의 작업 레일을 기준으로, 스케줄 Task와 thread 대화를 한 화면에서 이어서 다룹니다.
-            </p>
-            <div className="hero-stat-grid">
-              <div className="hero-stat-card">
-                <span>전체 Task</span>
-                <strong>{tasks.length}</strong>
+          <section className="sidebar-shell panel">
+            <header className="sidebar-minimal-header">
+              <div>
+                <p className="eyebrow">codex-scheduler</p>
+                <h1>Workspace</h1>
               </div>
-              <div className="hero-stat-card">
-                <span>활성 Task</span>
-                <strong>{tasks.filter((task) => task.enabled).length}</strong>
-              </div>
-            </div>
-            <button
-              className="primary-button sidebar-create-button"
-              type="button"
-              onClick={() => {
-                setEditingTask(null);
-                setSelectedTaskId(null);
-                setDraftSchedule("*/5 * * * *");
-                setDraftEnvironmentVariables("");
-                setViewMode("create");
-              }}
-            >
-              New Task
-            </button>
-            <p className="sidebar-stats">왼쪽 레일에서 Task를 고르고, 오른쪽 작업 영역에서 thread와 실행 로그를 이어서 확인합니다.</p>
+              <button
+                className="sidebar-plus-button"
+                type="button"
+                aria-label="새 Task 추가"
+                onClick={() => {
+                  setEditingTask(null);
+                  setSelectedTaskId(null);
+                  setDraftSchedule("*/5 * * * *");
+                  setDraftEnvironmentVariables("");
+                  setViewMode("create");
+                }}
+              >
+                +
+              </button>
+            </header>
+
+            {viewMode === "edit" ? (
+              <TaskForm
+                mode="edit"
+                initialTask={editingTask}
+                onSubmit={handleSubmit}
+                onCancelEdit={() => {
+                  setEditingTask(null);
+                  setViewMode("list");
+                }}
+                showBackButton={false}
+              />
+            ) : (
+              <TaskList
+                tasks={tasks}
+                selectedTaskId={selectedTaskId}
+                sessionMetaByTask={sessionMetaByTask}
+                onEdit={(task) => {
+                  setEditingTask(task);
+                  setViewMode("edit");
+                }}
+                onSelect={(taskId) => {
+                  setSelectedTaskId(taskId);
+                  setEditingTask(null);
+                  setViewMode("list");
+                }}
+              />
+            )}
           </section>
-
-          {viewMode === "edit" ? (
-            <TaskForm
-              mode="edit"
-              initialTask={editingTask}
-              onSubmit={handleSubmit}
-              onCancelEdit={() => {
-                setEditingTask(null);
-                setViewMode("list");
-              }}
-              showBackButton={false}
-            />
-          ) : null}
-
-          <TaskList
-            tasks={tasks}
-            selectedTaskId={selectedTaskId}
-            sessionMetaByTask={sessionMetaByTask}
-            onEdit={(task) => {
-              setEditingTask(task);
-              setViewMode("edit");
-            }}
-            onToggle={handleToggle}
-            onDelete={handleDelete}
-            onSelect={(taskId) => {
-              setSelectedTaskId(taskId);
-              setEditingTask(null);
-              setViewMode("list");
-            }}
-          />
         </aside>
 
         <section className="chat-main">

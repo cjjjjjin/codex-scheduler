@@ -72,6 +72,7 @@ Task는 아래의 정보를 가진다
 - 생성 시 입력 값은 스케쥴 정보와 Prompt 이다.
 - CODEX thread ID는 사용자가 직접 입력하지 않는다.
 - thread 생성 실패 시 Task 생성도 실패로 처리한다.
+- Task 생성 시 workspace의 `.agents/skills/task-settings`에 agent용 `task-settings` skill을 기본 설치한다.
 
 #### Task 편집 기능
 
@@ -106,9 +107,11 @@ Task는 아래의 정보를 가진다
   - Task 상세 조회
   - Task 생성
   - Task 수정
+  - Agent용 Task 설정 수정
   - Task 삭제
   - Task enable/disable 변경
   - Task 실행 이력 조회
+- Task 생성 시 workspace scoped default skill 설치
 - 스케쥴러는 backend 내부 구성요소로 동작한다.
 - Codex 호출 로직은 API 계층과 분리된 서비스 계층으로 구성한다.
 - Codex SDK는 backend 런타임 내부에서 직접 호출하는 것을 기본 구현 방향으로 한다.

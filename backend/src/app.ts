@@ -4,7 +4,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import { SCHEDULER_POLL_MS } from "./config.js";
 import { AppError } from "./errors.js";
 import type { AppRuntime } from "./runtime.js";
-import type { TaskChatPayload, TaskEnabledPayload, TaskPayload } from "./types.js";
+import type { TaskChatPayload, TaskEnabledPayload, TaskPayload, TaskSettingsPayload } from "./types.js";
 
 function allowLocalOrigin(origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void): void {
   if (!origin) {
@@ -53,6 +53,17 @@ export function createApp(runtime: AppRuntime) {
       next(error);
     }
   });
+
+  app.patch(
+    "/api/agent/tasks/:taskId/settings",
+    (request: Request<{ taskId: string }, unknown, TaskSettingsPayload>, response: Response, next: NextFunction) => {
+      try {
+        response.json(runtime.taskService.updateTaskSettings(request.params.taskId, request.body));
+      } catch (error) {
+        next(error);
+      }
+    }
+  );
 
   app.patch(
     "/api/tasks/:taskId/enabled",

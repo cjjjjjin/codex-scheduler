@@ -24,6 +24,8 @@
 - backend 내부 스케줄러 루프 구현 추가됨
 - 타임존은 `Asia/Seoul`
 - Codex SDK 직접 연동 서비스 추가됨
+- Task 생성 시 `task-settings` skill을 workspace의 `.agents/skills`에 기본 설치하는 방향 추가됨
+- Agent용 Task 설정 수정 API를 human용 Task 수정 API와 분리함
 
 ### Frontend
 
@@ -50,3 +52,4 @@
 3. Task 생성 시 실제 thread ID 반환 확인
 4. 스케줄 실행 시 `resumeThread(threadId)` 동작 확인
 5. 필요하면 legacy `codex-bridge` 정리 여부 결정
+6. task-settings skill의 backend API 사용 흐름 검증

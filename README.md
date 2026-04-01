@@ -17,6 +17,8 @@
 - backend 내부 스케줄러 루프
 - Codex SDK 직접 연동 서비스
 - Task별 `workspace_directory` 저장
+- Task 생성 시 workspace의 `.agents/skills/task-settings`에 `task-settings` skill 자동 설치
+- Agent용 Task 설정 수정 API 분리
 
 ## Codex 연동 방향
 
