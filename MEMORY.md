@@ -25,6 +25,7 @@
 - 타임존은 `Asia/Seoul`
 - Codex SDK 직접 연동 서비스 추가됨
 - Task 생성 시 `task-settings` skill을 workspace의 `.agents/skills`에 기본 설치하는 방향 추가됨
+- 새 Task의 `workspace_directory` 는 기본 workspace 경로 아래 task id 하위 경로를 사용하도록 조정됨
 - Agent용 Task 설정 수정 API를 human용 Task 수정 API와 분리함
 
 ### Frontend

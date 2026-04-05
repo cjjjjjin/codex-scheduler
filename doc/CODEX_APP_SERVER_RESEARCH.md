@@ -110,6 +110,8 @@ App Server는 다음과 같은 상호작용을 공식 지원한다.
 
 즉, 현재 `SPEC.md`의 "Task가 Session ID를 가지고, 스케줄 시 해당 Session에 Prompt를 전달"이라는 요구는 App Server로도 풀 수는 있지만, 공식 자료 기준으로는 SDK가 더 자연스럽다.
 
+다만 UI에서 기존 thread history를 복원해야 하는 경우에는 App Server의 `thread/read` / `thread/list`가 실용적이다. 이 프로젝트는 실행 경로는 SDK, 조회 경로는 App Server로 분리하는 하이브리드 구성이 가능하다.
+
 ## 현재 프로젝트에 대한 권장안
 
 ### 권장
@@ -170,7 +172,7 @@ App Server는 다음과 같은 상호작용을 공식 지원한다.
 - thread/turn/item 이벤트 모델 매핑
 - 장기 연결 오류 복구
 
-반면 현재 프로젝트 범위에서는 그 복잡도를 정당화할 만한 rich client 요구가 없다.
+반면 현재 프로젝트 범위에서는 그 복잡도를 정당화할 만한 rich client 요구가 크지 않다. 다만 `thread/read` 기반 history 표시처럼 조회성 기능만 필요하면 App Server를 부분 도입하는 편이 합리적이다.
 
 ## 지금 남은 App Server 검토 가치
 

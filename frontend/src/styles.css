@@ -65,7 +65,10 @@ a {
 }
 
 .app-shell-chat {
-  min-height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .error-banner {
@@ -82,13 +85,21 @@ a {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
+  min-height: 0;
+  height: 100%;
 }
 
 .sidebar,
 .workspace-shell {
   display: grid;
   gap: 12px;
+  min-height: 0;
+}
+
+.chat-main,
+.workspace-shell {
+  height: 100%;
 }
 
 .sidebar {
@@ -130,13 +141,15 @@ a {
 .chat-main,
 .workspace-grid {
   min-width: 0;
+  min-height: 0;
 }
 
 .workspace-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.85fr);
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
+  height: 100%;
 }
 
 .panel,
@@ -620,11 +633,13 @@ a {
 
 .conversation-panel,
 .activity-panel {
-  min-height: 680px;
+  min-height: 0;
+  height: 100%;
 }
 
 .chat-shell {
   grid-template-rows: auto auto minmax(0, 1fr) auto;
+  min-height: 0;
 }
 
 .chat-context-bar {
@@ -742,20 +757,26 @@ a {
 }
 
 .task-session-shell {
+  display: grid;
   min-height: 100%;
+  height: 100%;
 }
 
 .task-session-shell .aui-root {
   color: var(--text-strong);
+  min-height: 0;
+  height: 100%;
 }
 
 .task-session-shell .aui-thread-root {
-  min-height: 100%;
+  min-height: 0;
+  height: 100%;
   background: transparent;
 }
 
 .task-session-shell .aui-thread-viewport {
-  min-height: 100%;
+  min-height: 0;
+  height: 100%;
   padding: 14px;
 }
 
@@ -1030,7 +1051,8 @@ a {
 }
 
 .activity-list {
-  max-height: 560px;
+  min-height: 0;
+  max-height: 100%;
   overflow: auto;
 }
 
@@ -1077,20 +1099,33 @@ a {
 @media (max-width: 1180px) {
   .workspace-grid {
     grid-template-columns: minmax(0, 1fr);
+    height: auto;
   }
 
   .activity-panel {
     min-height: auto;
+    height: auto;
   }
 }
 
 @media (max-width: 920px) {
+  .app-shell-chat {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
   .chat-layout {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .sidebar {
     position: static;
+  }
+
+  .conversation-panel,
+  .activity-panel {
+    height: auto;
   }
 }
 

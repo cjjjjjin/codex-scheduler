@@ -51,6 +51,19 @@ export type TaskChatResponse = {
   response_text: string | null;
 };
 
+export type TaskHistoryMessage = {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  created_at: string | null;
+};
+
+export type TaskMessagesResponse = {
+  task_id: string;
+  thread_id: string;
+  messages: TaskHistoryMessage[];
+};
+
 export type CodexSendResult = {
   success: boolean;
   errorMessage: string | null;

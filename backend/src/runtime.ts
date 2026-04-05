@@ -1,3 +1,5 @@
+import { CODEX_APP_SERVER_URL } from "./config.js";
+import { CodexHistoryService } from "./codex-history-service.js";
 import { CodexService } from "./codex-service.js";
 import { createDatabase } from "./db.js";
 import { SkillService } from "./skill-service.js";
@@ -9,12 +11,14 @@ export function createRuntime() {
   const database = createDatabase();
   const taskRepository = new TaskRepository(database);
   const codexService = new CodexService();
+  const codexHistoryService = CODEX_APP_SERVER_URL ? new CodexHistoryService(CODEX_APP_SERVER_URL) : null;
   const skillService = new SkillService();
-  const taskService = new TaskService(taskRepository, codexService, skillService);
+  const taskService = new TaskService(taskRepository, codexService, skillService, codexHistoryService);
   const taskScheduler = new TaskScheduler(taskRepository, codexService);
 
   return {
     database,
+    codexHistoryService,
     taskRepository,
     skillService,
     taskService,

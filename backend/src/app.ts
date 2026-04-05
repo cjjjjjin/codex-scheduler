@@ -37,6 +37,14 @@ export function createApp(runtime: AppRuntime) {
     }
   });
 
+  app.get("/api/tasks/:taskId/messages", async (request: Request<{ taskId: string }>, response: Response, next: NextFunction) => {
+    try {
+      response.json(await runtime.taskService.getTaskMessages(request.params.taskId));
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.post("/api/tasks", async (request: Request<unknown, unknown, TaskPayload>, response: Response, next: NextFunction) => {
     try {
       const task = await runtime.taskService.createTask(request.body);

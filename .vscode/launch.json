@@ -2,6 +2,13 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Codex: App Server",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "codex app-server --listen ws://127.0.0.1:4500",
+      "cwd": "${workspaceFolder}"
+    },
+    {
       "name": "Backend: Express",
       "type": "node",
       "request": "launch",
@@ -9,6 +16,9 @@
       "program": "${workspaceFolder}/backend/dist/server.js",
       "preLaunchTask": "backend: build",
       "console": "integratedTerminal",
+      "env": {
+        "CODEX_APP_SERVER_URL": "ws://127.0.0.1:4500"
+      },
       "sourceMaps": true,
       "outFiles": [
         "${workspaceFolder}/backend/dist/**/*.js"
@@ -24,7 +34,8 @@
       "command": "npm run dev",
       "cwd": "${workspaceFolder}/backend",
       "env": {
-        "PORT": "8000"
+        "PORT": "8000",
+        "CODEX_APP_SERVER_URL": "ws://127.0.0.1:4500"
       }
     },
     {
@@ -44,8 +55,17 @@
   ],
   "compounds": [
     {
+      "name": "Backend + Codex App Server",
+      "configurations": [
+        "Codex: App Server",
+        "Backend: Express (Build/Run)"
+      ],
+      "stopAll": true
+    },
+    {
       "name": "Full Stack",
       "configurations": [
+        "Codex: App Server",
         "Backend: Express",
         "Frontend: Vite Dev Server",
         "Frontend: Chrome"

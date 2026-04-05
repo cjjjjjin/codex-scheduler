@@ -1,5 +1,3 @@
-import crypto from "node:crypto";
-
 import type Database from "better-sqlite3";
 
 import type { ExecutionRecord, ExecutionStatus, Task } from "./types.js";
@@ -56,6 +54,7 @@ function parseExecutionRow(row: Record<string, unknown>): ExecutionRecord {
 }
 
 type CreateTaskParams = {
+  id: string;
   schedule: string;
   threadId: string;
   prompt: string;
@@ -105,8 +104,7 @@ export class TaskRepository {
     return parseTaskRow(row);
   }
 
-  createTask({ schedule, threadId, prompt, workspaceDirectory, environmentVariables, enabled, createdAt, nextRunAt }: CreateTaskParams): Task {
-    const id = crypto.randomUUID();
+  createTask({ id, schedule, threadId, prompt, workspaceDirectory, environmentVariables, enabled, createdAt, nextRunAt }: CreateTaskParams): Task {
     this.database
       .prepare(`
         INSERT INTO tasks (

@@ -1,10 +1,10 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { AssistantRuntimeProvider, ThreadPrimitive, useLocalRuntime, useMessage, useThread, type ChatModelAdapter, type ThreadMessage } from "@assistant-ui/react";
+import { AssistantRuntimeProvider, ThreadPrimitive, useLocalRuntime, useMessage, useThread, type ChatModelAdapter, type ThreadMessage, type ThreadMessageLike } from "@assistant-ui/react";
 import { Thread, makeMarkdownText } from "@assistant-ui/react-ui";
 
 import { api } from "../api/client";
-import type { Task, TaskSessionMeta } from "../types";
+import type { Task, TaskHistoryMessage, TaskSessionMeta } from "../types";
 
 type AssistantTaskThreadProps = {
   task: Task;
@@ -99,6 +99,15 @@ function toMessageText(message: ThreadMessage) {
     .join("\n\n");
 }
 
+function toInitialThreadMessage(message: TaskHistoryMessage): ThreadMessageLike {
+  return {
+    id: message.id,
+    role: message.role,
+    createdAt: message.created_at ? new Date(message.created_at) : new Date(),
+    content: message.text
+  };
+}
+
 function TaskThreadMetaSync({ taskId, onMetaChange }: Pick<AssistantTaskThreadProps, "onMetaChange"> & { taskId: string }) {
   const messageCount = useThread((state) => state.messages.filter((message) => message.role === "assistant" || message.role === "user").length);
   const lastMessageAt = useThread((state) => {
@@ -119,7 +128,7 @@ function TaskThreadMetaSync({ taskId, onMetaChange }: Pick<AssistantTaskThreadPr
   return null;
 }
 
-function TaskThreadRuntime({ task, onMetaChange }: AssistantTaskThreadProps) {
+function TaskThreadRuntime({ task, onMetaChange, initialMessages }: AssistantTaskThreadProps & { initialMessages: ThreadMessageLike[] }) {
   const model = useMemo<ChatModelAdapter>(
     () => ({
       async run({ messages: threadMessages, abortSignal }) {
@@ -140,7 +149,7 @@ function TaskThreadRuntime({ task, onMetaChange }: AssistantTaskThreadProps) {
     [task.id]
   );
 
-  const runtime = useLocalRuntime(model);
+  const runtime = useLocalRuntime(model, { initialMessages });
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -200,5 +209,42 @@ function TaskThreadRuntime({ task, onMetaChange }: AssistantTaskThreadProps) {
 }
 
 export function AssistantTaskThread(props: AssistantTaskThreadProps) {
-  return <TaskThreadRuntime key={props.task.id} {...props} />;
+  const [initialMessages, setInitialMessages] = useState<ThreadMessageLike[] | null>(null);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    setInitialMessages(null);
+    setHistoryError(null);
+
+    api
+      .getTaskMessages(props.task.id)
+      .then((response) => {
+        if (!isCancelled) {
+          setInitialMessages(response.messages.map(toInitialThreadMessage));
+        }
+      })
+      .catch((error) => {
+        if (!isCancelled) {
+          setHistoryError(error instanceof Error ? error.message : String(error));
+          setInitialMessages([]);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [props.task.id]);
+
+  if (initialMessages === null) {
+    return <div className="task-session-shell">Thread history loading...</div>;
+  }
+
+  return (
+    <>
+      {historyError ? <div className="task-thread-history-error">{historyError}</div> : null}
+      <TaskThreadRuntime key={props.task.id} {...props} initialMessages={initialMessages} />
+    </>
+  );
 }

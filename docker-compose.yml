@@ -1,0 +1,17 @@
+services:
+  codex-scheduler-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: "8000"
+      CODEX_APP_SERVER_URL: "ws://127.0.0.1:4500"
+      CODEX_WORKSPACE_DIR: "/workspace"
+      CODEX_HOME: "/home/node/.codex"
+    volumes:
+      - ./backend/data:/app/backend/data
+      - ./:/workspace
+      - ${HOME}/.codex:/home/node/.codex
+    restart: unless-stopped

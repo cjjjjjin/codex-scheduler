@@ -1,4 +1,8 @@
+import crypto from "node:crypto";
+import path from "node:path";
+
 import { DEFAULT_WORKSPACE_DIRECTORY } from "./config.js";
+import type { CodexHistoryService } from "./codex-history-service.js";
 import { AppError, CodexServiceError } from "./errors.js";
 import { getNextRunAt, nowInAppTimezone, validateSchedule } from "./schedule-utils.js";
 import type { CodexService } from "./codex-service.js";
@@ -19,15 +23,26 @@ function normalizeEnvironmentVariables(value: Record<string, string> | undefined
   );
 }
 
+function buildTaskWorkspaceDirectory(taskId: string): string {
+  return path.join(DEFAULT_WORKSPACE_DIRECTORY, taskId);
+}
+
 export class TaskService {
   taskRepository: TaskRepository;
   codexService: CodexService;
   skillService: SkillService;
+  codexHistoryService: CodexHistoryService | null;
 
-  constructor(taskRepository: TaskRepository, codexService: CodexService, skillService: SkillService) {
+  constructor(
+    taskRepository: TaskRepository,
+    codexService: CodexService,
+    skillService: SkillService,
+    codexHistoryService: CodexHistoryService | null
+  ) {
     this.taskRepository = taskRepository;
     this.codexService = codexService;
     this.skillService = skillService;
+    this.codexHistoryService = codexHistoryService;
   }
 
   listTasks() {
@@ -44,9 +59,12 @@ export class TaskService {
 
   async createTask(payload: TaskPayload) {
     validateTaskPayload(payload);
+    const taskId = crypto.randomUUID();
+    const workspaceDirectory = buildTaskWorkspaceDirectory(taskId);
+    const environmentVariables = normalizeEnvironmentVariables(payload.environment_variables);
 
     try {
-      this.skillService.ensureTaskSettingsSkillInstalled(DEFAULT_WORKSPACE_DIRECTORY);
+      this.skillService.ensureTaskSettingsSkillInstalled(workspaceDirectory);
     } catch (error) {
       throw new AppError(
         500,
@@ -56,13 +74,13 @@ export class TaskService {
 
     let threadId: string;
     try {
-      threadId = await this.codexService.createThread(DEFAULT_WORKSPACE_DIRECTORY, normalizeEnvironmentVariables(payload.environment_variables));
+      threadId = await this.codexService.createThread(workspaceDirectory, environmentVariables);
     } catch (error) {
       const message = error instanceof CodexServiceError ? error.message : String(error);
       throw new AppError(502, `Failed to create Codex thread: ${message}`);
     }
 
-    return this.createTaskRecord(threadId, payload);
+    return this.createTaskRecord(taskId, threadId, workspaceDirectory, environmentVariables, payload);
   }
 
   updateTask(taskId: string, payload: TaskPayload) {
@@ -83,15 +101,22 @@ export class TaskService {
     });
   }
 
-  private createTaskRecord(threadId: string, payload: TaskPayload) {
+  private createTaskRecord(
+    taskId: string,
+    threadId: string,
+    workspaceDirectory: string,
+    environmentVariables: Record<string, string>,
+    payload: TaskPayload
+  ) {
     const now = nowInAppTimezone();
     const nextRunAt = getNextRunAt(payload.schedule, now);
     return this.taskRepository.createTask({
+      id: taskId,
       schedule: payload.schedule.trim(),
       threadId,
       prompt: payload.prompt.trim(),
-      workspaceDirectory: DEFAULT_WORKSPACE_DIRECTORY,
-      environmentVariables: normalizeEnvironmentVariables(payload.environment_variables),
+      workspaceDirectory,
+      environmentVariables,
       enabled: true,
       createdAt: now.toISOString(),
       nextRunAt: nextRunAt.toISOString()
@@ -119,6 +144,20 @@ export class TaskService {
       this.getTask(taskId);
     }
     return this.taskRepository.listExecutionHistory(taskId);
+  }
+
+  async getTaskMessages(taskId: string) {
+    const task = this.getTask(taskId);
+
+    if (!this.codexHistoryService) {
+      throw new AppError(503, "Codex App Server is not configured.");
+    }
+
+    return {
+      task_id: task.id,
+      thread_id: task.thread_id,
+      messages: await this.codexHistoryService.listMessages(task.thread_id)
+    };
   }
 
   async sendChatMessage(taskId: string, payload: TaskChatPayload) {
