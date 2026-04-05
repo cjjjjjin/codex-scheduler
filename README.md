@@ -6,7 +6,6 @@
 
 - `backend`: Express + SQLite 기반 API 및 스케줄러
 - `frontend`: React + TypeScript 기반 관리 UI
-- `codex-bridge`: legacy 브리지 구현 보관용 디렉터리
 
 ## 현재 구현 범위
 
@@ -64,8 +63,6 @@ npm run dev
 - 새 Task의 실제 workspace directory는 `기본 workspace directory/{taskId}` 형식으로 계산됩니다.
 - Codex 인증은 Codex SDK가 사용하는 환경 변수 또는 Codex 로그인 상태에 의존합니다.
 - Codex App Server history 조회를 쓰려면 `CODEX_APP_SERVER_URL=ws://127.0.0.1:4500` 같은 값을 추가합니다.
-
-`codex-bridge` 는 과거 브리지 실험용 디렉터리이며, 현재 기본 실행 경로는 아닙니다.
 
 ### Frontend
 

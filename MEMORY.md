@@ -52,5 +52,4 @@
 2. backend에서 Codex SDK 직접 호출 검증
 3. Task 생성 시 실제 thread ID 반환 확인
 4. 스케줄 실행 시 `resumeThread(threadId)` 동작 확인
-5. 필요하면 legacy `codex-bridge` 정리 여부 결정
-6. task-settings skill의 backend API 사용 흐름 검증
+5. task-settings skill의 backend API 사용 흐름 검증

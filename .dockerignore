@@ -6,5 +6,4 @@ backend/node_modules
 frontend/dist
 backend/dist
 third-party
-codex-bridge
 tmp
