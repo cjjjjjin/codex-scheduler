@@ -39,7 +39,7 @@ function AssistantMessageFooter({ task }: { task: Task }) {
   );
 }
 
-function TaskWelcome({ task }: { task: Task }) {
+function TaskThreadHeader({ task }: { task: Task }) {
   const suggestions = task.enabled
     ? [
         "현재 Task 목적을 한 줄로 요약해줘",
@@ -53,38 +53,36 @@ function TaskWelcome({ task }: { task: Task }) {
       ];
 
   return (
-    <ThreadPrimitive.Empty>
-      <section className="task-thread-welcome">
-        <div className="task-thread-welcome-copy">
-          <p className="stack-label">Thread Session</p>
-          <h3>{task.prompt}</h3>
-          <p>이 대화는 Task의 기존 thread를 그대로 사용합니다. scheduler 상태와 관계없이 같은 Codex context를 이어서 사용할 수 있습니다.</p>
-        </div>
+    <section className="task-thread-header">
+      <div className="task-thread-welcome-copy">
+        <p className="stack-label">Thread Session</p>
+        <h3>{task.prompt}</h3>
+        <p>이 대화는 Task의 기존 thread를 그대로 사용합니다. scheduler 상태와 관계없이 같은 Codex context를 이어서 사용할 수 있습니다.</p>
+      </div>
 
-        <div className="task-thread-welcome-facts">
-          <div className="task-thread-fact">
-            <span className="task-card-meta-label">Schedule</span>
-            <code>{task.schedule}</code>
-          </div>
-          <div className="task-thread-fact">
-            <span className="task-card-meta-label">Status</span>
-            <strong>{task.enabled ? "scheduler enabled" : "scheduler paused"}</strong>
-          </div>
-          <div className="task-thread-fact task-thread-fact-wide">
-            <span className="task-card-meta-label">Thread</span>
-            <p className="task-card-mono" title={task.thread_id}>{task.thread_id}</p>
-          </div>
+      <div className="task-thread-welcome-facts">
+        <div className="task-thread-fact">
+          <span className="task-card-meta-label">Schedule</span>
+          <code>{task.schedule}</code>
         </div>
+        <div className="task-thread-fact">
+          <span className="task-card-meta-label">Status</span>
+          <strong>{task.enabled ? "scheduler running" : "scheduler paused"}</strong>
+        </div>
+        <div className="task-thread-fact task-thread-fact-wide">
+          <span className="task-card-meta-label">Thread</span>
+          <p className="task-card-mono" title={task.thread_id}>{task.thread_id}</p>
+        </div>
+      </div>
 
-        <div className="task-thread-suggestions">
-          {suggestions.map((prompt) => (
-            <ThreadPrimitive.Suggestion key={prompt} className="task-thread-suggestion" prompt={prompt} method="replace" autoSend>
-              {prompt}
-            </ThreadPrimitive.Suggestion>
-          ))}
-        </div>
-      </section>
-    </ThreadPrimitive.Empty>
+      <div className="task-thread-suggestions">
+        {suggestions.map((prompt) => (
+          <ThreadPrimitive.Suggestion key={prompt} className="task-thread-suggestion" prompt={prompt} method="replace" autoSend>
+            {prompt}
+          </ThreadPrimitive.Suggestion>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -183,19 +181,9 @@ function TaskThreadRuntime({
     <AssistantRuntimeProvider runtime={runtime}>
       <TaskThreadMetaSync taskId={task.id} onMetaChange={onMetaChange} />
       <div className="task-session-shell">
+        <TaskThreadHeader task={task} />
         <Thread
           assistantAvatar={{ fallback: "C" }}
-          welcome={{
-            message: `Task \"${task.prompt}\"에 연결된 Codex thread입니다. 이 창에서 같은 thread를 계속 사용합니다.`,
-            suggestions: [
-              {
-                prompt: "현재 Task 목적을 한 줄로 요약해줘"
-              },
-              {
-                prompt: "다음 스케줄 실행 전에 확인할 점을 정리해줘"
-              }
-            ]
-          }}
           composer={{ allowAttachments: false }}
           userMessage={{ allowEdit: false }}
           assistantMessage={{
@@ -208,9 +196,6 @@ function TaskThreadRuntime({
               Text: MarkdownText,
               Footer: () => <AssistantMessageFooter task={task} />
             }
-          }}
-          components={{
-            ThreadWelcome: () => <TaskWelcome task={task} />
           }}
           strings={{
             thread: {

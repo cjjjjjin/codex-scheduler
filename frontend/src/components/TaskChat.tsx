@@ -222,10 +222,6 @@ export function TaskChat({
           <AssistantTaskThread task={selectedTask} onMetaChange={onSessionMetaChange} />
         </Suspense>
       </div>
-      <div className="thread-stage-meta">
-        <span>{history[0] ? `최근 실행 ${formatDateTime(history[0].executed_at)}` : "아직 실행 기록이 없습니다."}</span>
-        <span>{formatRelativeTaskState(selectedTask)}</span>
-      </div>
     </section>
   );
 }

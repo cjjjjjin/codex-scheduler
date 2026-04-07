@@ -81,7 +81,7 @@ a {
 
 .chat-layout {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-columns: 340px minmax(0, 1fr);
   gap: 0;
   align-items: stretch;
   min-height: 0;
@@ -98,15 +98,15 @@ a {
 }
 
 .sidebar {
-  background: #eef2fe;
+  background: #dde4f8;
 }
 
 .sidebar-shell {
   min-height: 100%;
-  padding: 18px;
+  padding: 22px 20px;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 16px;
+  gap: 24px;
 }
 
 .sidebar-minimal-header {
@@ -117,10 +117,10 @@ a {
 }
 
 .sidebar-plus-button {
-  width: 32px;
-  height: 36px;
+  width: 34px;
+  height: 38px;
   border: 1px solid #171717;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #171717;
   color: #fcfcfc;
   font-size: 1rem;
@@ -402,7 +402,7 @@ a {
 
 .task-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   align-content: start;
 }
 
@@ -422,7 +422,8 @@ a {
 
 .task-card.selected {
   border-color: transparent;
-  background: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(15, 23, 42, 0.04);
 }
 
 .task-card.disabled {
@@ -430,8 +431,8 @@ a {
 }
 
 .task-card-compact {
-  min-height: 55px;
-  padding: 8px 12px 8px 14px;
+  min-height: 58px;
+  padding: 10px 14px;
   gap: 0;
   background: transparent;
   box-shadow: none;
@@ -458,7 +459,7 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.98rem;
+  font-size: 1rem;
   font-weight: 500;
 }
 
@@ -482,6 +483,11 @@ a {
 
 .task-card-edit-button {
   flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border-color: rgba(23, 23, 23, 0.08);
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .task-card-topline {
@@ -739,50 +745,55 @@ a {
 
 .task-session-shell {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   min-height: 100%;
   height: 100%;
+  background: #fcfcfc;
 }
 
 .task-session-shell .aui-root {
   color: var(--text-strong);
   min-height: 0;
   height: 100%;
+  display: grid;
 }
 
 .task-session-shell .aui-thread-root {
   min-height: 0;
   height: 100%;
   background: transparent;
+  display: grid;
 }
 
 .task-session-shell .aui-thread-viewport {
   min-height: 0;
   height: 100%;
-  padding: 0;
+  padding: 0 22px 0;
 }
 
 .task-session-shell .aui-thread-viewport-footer {
   position: sticky;
   bottom: 0;
-  padding-top: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(252, 252, 252, 0.9) 18%, rgba(252, 252, 252, 1));
+  padding: 16px 22px 0;
+  background: linear-gradient(180deg, rgba(252, 252, 252, 0), rgba(252, 252, 252, 0.92) 20%, rgba(252, 252, 252, 1));
 }
 
-.task-session-shell .aui-thread-welcome-root,
 .task-session-shell .aui-user-message-root,
 .task-session-shell .aui-assistant-message-root {
   max-width: 100%;
 }
 
-.task-thread-welcome {
+.task-thread-header {
   display: grid;
-  gap: 16px;
-  padding: 24px 0 18px;
+  gap: 12px;
+  padding: 10px 22px 18px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  background: #fcfcfc;
 }
 
 .task-thread-welcome-copy h3 {
   margin: 6px 0 8px;
-  font-size: 1.1rem;
+  font-size: 2rem;
   font-weight: 500;
   color: var(--text-strong);
 }
@@ -797,16 +808,16 @@ a {
 .task-thread-welcome-facts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .task-thread-fact {
   display: grid;
   gap: 6px;
-  padding: 12px;
-  border: 1px solid var(--border-base);
-  border-radius: 12px;
-  background: rgba(252, 252, 252, 0.92);
+  padding: 14px 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(252, 252, 252, 0.96));
 }
 
 .task-thread-fact strong,
@@ -829,36 +840,16 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  padding-top: 4px;
 }
 
 .task-thread-suggestion {
-  border: 1px solid var(--border-base);
+  border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 999px;
-  padding: 10px 13px;
-  background: var(--background-strong);
+  padding: 10px 14px;
+  background: #ffffff;
   color: var(--text-strong);
   font-size: 0.85rem;
-}
-
-.task-session-shell .aui-thread-welcome-center {
-  align-items: start;
-  text-align: left;
-}
-
-.task-session-shell .aui-thread-welcome-message {
-  color: var(--text-base);
-}
-
-.task-session-shell .aui-thread-welcome-suggestions,
-.task-session-shell .aui-thread-followup-suggestions {
-  justify-content: flex-start;
-}
-
-.task-session-shell .aui-thread-welcome-suggestion,
-.task-session-shell .aui-thread-followup-suggestion {
-  border-color: var(--border-base);
-  background: var(--background-strong);
-  color: var(--text-strong);
 }
 
 .task-session-shell .aui-user-message-content,
@@ -881,7 +872,7 @@ a {
 
 .task-session-shell .aui-composer-root,
 .task-session-shell .aui-edit-composer-root {
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .task-assistant-footer {
@@ -918,6 +909,20 @@ a {
 .task-session-shell .aui-md-p,
 .task-session-shell .aui-text {
   color: var(--text-strong);
+}
+
+.task-session-shell .aui-thread-list {
+  padding: 18px 0 28px;
+}
+
+.task-session-shell .aui-assistant-message-root,
+.task-session-shell .aui-user-message-root {
+  margin: 0 0 14px;
+}
+
+.task-session-shell .aui-assistant-message-content,
+.task-session-shell .aui-user-message-content {
+  border-radius: 16px;
 }
 
 .task-session-shell .aui-button-outline,
@@ -1081,20 +1086,10 @@ a {
 
 .thread-stage {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
   height: 100%;
-  background: #edf1ff;
-}
-
-.thread-stage-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 18px 14px;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  background: #edf1ff;
+  background: #fcfcfc;
 }
 
 .conversation-panel-create {
@@ -1169,9 +1164,5 @@ a {
   .form-actions button,
   .chat-composer-actions button {
     width: 100%;
-  }
-
-  .thread-stage-meta {
-    flex-direction: column;
   }
 }
