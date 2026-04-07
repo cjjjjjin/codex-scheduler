@@ -11,6 +11,7 @@ test("agent task settings route is separate from normal task update", async () =
     taskService: {
       listTasks: () => [],
       getTask: () => ({ id: "task-1" }),
+      getTaskMessages: async () => ({ messages: [] }),
       createTask: async () => ({ id: "task-1" }),
       updateTask: (_taskId: string, body: unknown) => {
         humanBody = body;

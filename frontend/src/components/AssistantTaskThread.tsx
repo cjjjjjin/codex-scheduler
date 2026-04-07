@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AssistantRuntimeProvider, ThreadPrimitive, useLocalRuntime, useMessage, useThread, type ChatModelAdapter, type ThreadMessage, type ThreadMessageLike } from "@assistant-ui/react";
 import { Thread, makeMarkdownText } from "@assistant-ui/react-ui";
@@ -108,6 +108,25 @@ function toInitialThreadMessage(message: TaskHistoryMessage): ThreadMessageLike 
   };
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+function hasPersistedExchange(messages: TaskHistoryMessage[], userText: string, assistantText: string | null) {
+  const hasUserMessage = messages.some((message) => message.role === "user" && message.text.trim() === userText.trim());
+  if (!hasUserMessage) {
+    return false;
+  }
+
+  if (!assistantText || !assistantText.trim()) {
+    return true;
+  }
+
+  return messages.some((message) => message.role === "assistant" && message.text.trim() === assistantText.trim());
+}
+
 function TaskThreadMetaSync({ taskId, onMetaChange }: Pick<AssistantTaskThreadProps, "onMetaChange"> & { taskId: string }) {
   const messageCount = useThread((state) => state.messages.filter((message) => message.role === "assistant" || message.role === "user").length);
   const lastMessageAt = useThread((state) => {
@@ -128,13 +147,22 @@ function TaskThreadMetaSync({ taskId, onMetaChange }: Pick<AssistantTaskThreadPr
   return null;
 }
 
-function TaskThreadRuntime({ task, onMetaChange, initialMessages }: AssistantTaskThreadProps & { initialMessages: ThreadMessageLike[] }) {
+function TaskThreadRuntime({
+  task,
+  onMetaChange,
+  initialMessages,
+  onPersistHistory
+}: AssistantTaskThreadProps & {
+  initialMessages: ThreadMessageLike[];
+  onPersistHistory: (userText: string, assistantText: string | null) => Promise<void>;
+}) {
   const model = useMemo<ChatModelAdapter>(
     () => ({
       async run({ messages: threadMessages, abortSignal }) {
         const userMessage = [...threadMessages].reverse().find((message) => message.role === "user");
         const text = userMessage ? toMessageText(userMessage) : "";
         const response = await api.sendTaskMessage(task.id, text, abortSignal);
+        void onPersistHistory(text, response.response_text);
 
         return {
           content: [
@@ -146,7 +174,7 @@ function TaskThreadRuntime({ task, onMetaChange, initialMessages }: AssistantTas
         };
       }
     }),
-    [task.id]
+    [onPersistHistory, task.id]
   );
 
   const runtime = useLocalRuntime(model, { initialMessages });
@@ -211,31 +239,57 @@ function TaskThreadRuntime({ task, onMetaChange, initialMessages }: AssistantTas
 export function AssistantTaskThread(props: AssistantTaskThreadProps) {
   const [initialMessages, setInitialMessages] = useState<ThreadMessageLike[] | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyRevision, setHistoryRevision] = useState(0);
+
+  const loadPersistedHistory = useCallback(
+    async (expectedUserText?: string, expectedAssistantText?: string | null) => {
+      let lastError: string | null = null;
+
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        try {
+          const response = await api.getTaskMessages(props.task.id);
+          const messages = response.messages;
+          const foundExpectedExchange =
+            !expectedUserText || hasPersistedExchange(messages, expectedUserText, expectedAssistantText ?? null);
+
+          if (foundExpectedExchange || attempt === 0 && !expectedUserText) {
+            setHistoryError(null);
+            setInitialMessages(messages.map(toInitialThreadMessage));
+            setHistoryRevision((current) => current + 1);
+            return;
+          }
+        } catch (error) {
+          lastError = error instanceof Error ? error.message : String(error);
+        }
+
+        await sleep(250 * (attempt + 1));
+      }
+
+      if (lastError) {
+        setHistoryError(lastError);
+      }
+    },
+    [props.task.id]
+  );
 
   useEffect(() => {
     let isCancelled = false;
 
     setInitialMessages(null);
     setHistoryError(null);
+    setHistoryRevision(0);
 
-    api
-      .getTaskMessages(props.task.id)
-      .then((response) => {
-        if (!isCancelled) {
-          setInitialMessages(response.messages.map(toInitialThreadMessage));
-        }
-      })
-      .catch((error) => {
-        if (!isCancelled) {
-          setHistoryError(error instanceof Error ? error.message : String(error));
-          setInitialMessages([]);
-        }
-      });
+    void loadPersistedHistory().catch((error) => {
+      if (!isCancelled) {
+        setHistoryError(error instanceof Error ? error.message : String(error));
+        setInitialMessages([]);
+      }
+    });
 
     return () => {
       isCancelled = true;
     };
-  }, [props.task.id]);
+  }, [loadPersistedHistory, props.task.id]);
 
   if (initialMessages === null) {
     return <div className="task-session-shell">Thread history loading...</div>;
@@ -244,7 +298,12 @@ export function AssistantTaskThread(props: AssistantTaskThreadProps) {
   return (
     <>
       {historyError ? <div className="task-thread-history-error">{historyError}</div> : null}
-      <TaskThreadRuntime key={props.task.id} {...props} initialMessages={initialMessages} />
+      <TaskThreadRuntime
+        key={`${props.task.id}:${historyRevision}`}
+        {...props}
+        initialMessages={initialMessages}
+        onPersistHistory={loadPersistedHistory}
+      />
     </>
   );
 }

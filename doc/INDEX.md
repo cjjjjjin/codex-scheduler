@@ -16,7 +16,7 @@
 
 - 주제: Codex App Server의 개념, 역할, 적용 적합성 조사
 - 용도: App Server를 도입할지, SDK와 어떤 차이가 있는지 판단할 때 참고
-- 핵심 포인트: `codex-scheduler` 같은 자동화 백엔드에는 SDK가 더 직접적이지만, history 조회 같은 UI 보완에는 App Server를 병행할 수 있다는 정리 포함
+- 핵심 포인트: App Server의 역할과 trade-off, 그리고 현재 저장소에 적용할 때 확인해야 할 포인트 정리
 
 ### `CODEX_PROJECT_STRUCTURE.md`
 

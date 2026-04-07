@@ -14,8 +14,8 @@
 - Task 실행 이력 조회
 - CRON 기반 `next_run_at` 계산
 - backend 내부 스케줄러 루프
-- Codex SDK 직접 연동 서비스
-- 선택적으로 Codex App Server를 통한 thread history 조회
+- Codex App Server 직접 연동 서비스
+- Codex App Server를 통한 thread history 조회
 - Task별 `workspace_directory` 저장
 - 새 Task의 workspace directory는 기본 workspace 경로 아래 `{taskId}` 하위 디렉터리로 생성
 - Task 생성 시 workspace의 `.agents/skills/task-settings`에 `task-settings` skill 자동 설치
@@ -23,15 +23,15 @@
 
 ## Codex 연동 방향
 
-- Codex 연동은 `Codex SDK` 기준으로 진행합니다.
+- Codex 연동은 `Codex App Server` 기준으로 진행합니다.
 - `Task.thread_id` 는 Codex thread ID 입니다.
-- Task 생성 시 thread를 만들고, 이후 스케줄 실행 시 같은 thread를 resume 해서 prompt를 전달하는 흐름을 목표로 합니다.
-- 현재 구현은 backend의 Node.js 런타임에서 Codex SDK를 직접 호출하는 방식입니다.
-- chat history 조회를 활성화하려면 `CODEX_APP_SERVER_URL` 을 설정합니다.
+- Task 생성 시 thread를 만들고, 이후 스케줄 실행 시 같은 thread를 resume 해서 turn을 시작하는 흐름을 사용합니다.
+- 현재 구현은 backend의 Node.js 런타임에서 Codex App Server를 직접 호출하는 방식입니다.
+- 기본 App Server 주소는 `ws://127.0.0.1:4500` 이며, `CODEX_APP_SERVER_URL` 로 override 할 수 있습니다.
 
 ## 주의 사항
 
-현재 backend는 Express 기반 Node.js 서버이며, Codex SDK를 직접 호출합니다.
+현재 backend는 Express 기반 Node.js 서버이며, Codex App Server를 직접 호출합니다.
 
 ## 실행 방법
 
@@ -61,8 +61,9 @@ npm run dev
 - API 기본 주소는 `http://localhost:8000/api` 입니다.
 - 기본 workspace directory는 저장소 루트이며, 필요하면 `CODEX_WORKSPACE_DIR` 환경 변수로 override 할 수 있습니다.
 - 새 Task의 실제 workspace directory는 `기본 workspace directory/{taskId}` 형식으로 계산됩니다.
-- Codex 인증은 Codex SDK가 사용하는 환경 변수 또는 Codex 로그인 상태에 의존합니다.
-- Codex App Server history 조회를 쓰려면 `CODEX_APP_SERVER_URL=ws://127.0.0.1:4500` 같은 값을 추가합니다.
+- Codex 인증은 App Server가 사용하는 Codex 로그인 상태에 의존합니다.
+- App Server 주소를 바꾸려면 `CODEX_APP_SERVER_URL=ws://127.0.0.1:4500` 같은 값을 사용합니다.
+- task별 `environment_variables` 는 App Server turn API에 직접 매핑되지 않으므로, 현재 실행 경로에서는 지원하지 않습니다.
 
 ### Frontend
 

@@ -1,18 +1,8 @@
 import { readFile } from "node:fs/promises";
 
+import { AppServerClient } from "./app-server-client.js";
 import { AppError } from "./errors.js";
 import type { TaskHistoryMessage } from "./types.js";
-
-type JsonRpcMessage = {
-  id?: string | number | null;
-  method?: string;
-  params?: unknown;
-  result?: unknown;
-  error?: {
-    code?: number;
-    message?: string;
-  };
-};
 
 type ThreadReadResult = {
   thread?: {
@@ -48,15 +38,6 @@ type AppServerThreadItem =
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
-}
-
-function parseJsonRpcMessage(raw: string): JsonRpcMessage {
-  const parsed: unknown = JSON.parse(raw);
-  if (!isObject(parsed)) {
-    throw new Error("App Server returned a non-object JSON-RPC frame.");
-  }
-
-  return parsed as JsonRpcMessage;
 }
 
 function readUserMessageTexts(item: AppServerThreadItem): string[] {
@@ -153,7 +134,11 @@ async function readMessagesFromRollout(path: string): Promise<TaskHistoryMessage
 }
 
 export class CodexHistoryService {
-  constructor(private readonly serverUrl: string) {}
+  private readonly client: AppServerClient;
+
+  constructor(private readonly serverUrl: string) {
+    this.client = new AppServerClient(serverUrl);
+  }
 
   async listMessages(threadId: string): Promise<TaskHistoryMessage[]> {
     const response = await this.sendRequest<ThreadReadResult>("thread/read", {
@@ -177,84 +162,8 @@ export class CodexHistoryService {
   }
 
   private async sendRequest<TResult>(method: string, params: Record<string, unknown>): Promise<TResult> {
-    const socket = new (globalThis as { WebSocket: new (url: string) => WebSocketLike }).WebSocket(this.serverUrl);
-
-    return await new Promise<TResult>((resolve, reject) => {
-      let isSettled = false;
-      let requestCounter = 0;
-      const initializeRequestId = ++requestCounter;
-      const methodRequestId = ++requestCounter;
-
-      const settle = (callback: () => void) => {
-        if (isSettled) {
-          return;
-        }
-
-        isSettled = true;
-        callback();
-        socket.close();
-      };
-
-      socket.addEventListener("open", () => {
-        socket.send(
-          JSON.stringify({
-            id: initializeRequestId,
-            method: "initialize",
-            params: {
-              clientInfo: {
-                name: "codex_scheduler_backend",
-                version: "0.1.0"
-              }
-            }
-          })
-        );
-      });
-
-      socket.addEventListener("message", (event) => {
-        try {
-          const payload = parseJsonRpcMessage(String(event.data));
-
-          if (payload.error) {
-            const errorMessage = payload.error.message ?? `App Server ${method} request failed.`;
-            settle(() => reject(new Error(errorMessage)));
-            return;
-          }
-
-          if (payload.id === initializeRequestId) {
-            socket.send(JSON.stringify({ method: "initialized", params: {} }));
-            socket.send(JSON.stringify({ id: methodRequestId, method, params }));
-            return;
-          }
-
-          if (payload.id === methodRequestId) {
-            settle(() => resolve((payload.result ?? {}) as TResult));
-          }
-        } catch (error) {
-          settle(() => reject(error));
-        }
-      });
-
-      socket.addEventListener("error", () => {
-        settle(() => reject(new Error(`Failed to connect to Codex App Server at ${this.serverUrl}.`)));
-      });
-
-      socket.addEventListener("close", () => {
-        if (!isSettled) {
-          isSettled = true;
-          reject(new Error(`Codex App Server connection closed before ${method} completed.`));
-        }
-      });
-    }).catch((error) => {
+    return this.client.request<TResult>(method, params).catch((error) => {
       throw new AppError(502, error instanceof Error ? error.message : String(error));
     });
   }
 }
-
-type WebSocketLike = {
-  send(data: string): void;
-  close(): void;
-  addEventListener(type: "open", listener: () => void): void;
-  addEventListener(type: "message", listener: (event: { data: unknown }) => void): void;
-  addEventListener(type: "error", listener: () => void): void;
-  addEventListener(type: "close", listener: () => void): void;
-};

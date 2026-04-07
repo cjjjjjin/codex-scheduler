@@ -10,8 +10,8 @@ import { TaskService } from "./task-service.js";
 export function createRuntime() {
   const database = createDatabase();
   const taskRepository = new TaskRepository(database);
-  const codexService = new CodexService();
-  const codexHistoryService = CODEX_APP_SERVER_URL ? new CodexHistoryService(CODEX_APP_SERVER_URL) : null;
+  const codexService = new CodexService(CODEX_APP_SERVER_URL);
+  const codexHistoryService = new CodexHistoryService(CODEX_APP_SERVER_URL);
   const skillService = new SkillService();
   const taskService = new TaskService(taskRepository, codexService, skillService, codexHistoryService);
   const taskScheduler = new TaskScheduler(taskRepository, codexService);

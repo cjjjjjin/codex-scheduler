@@ -1,6 +1,6 @@
 # codex-scheduler SPEC
 
-OpenAI Codex SDK를 이용해 지정한 주기에 지정한 Codex thread에 메세지를 전달하는 Backend, Frontend 프로젝트 입니다.
+OpenAI Codex App Server를 이용해 지정한 주기에 지정한 Codex thread에 메세지를 전달하는 Backend, Frontend 프로젝트 입니다.
 
 ## 프로젝트 범위
 
@@ -68,7 +68,7 @@ Task는 아래의 정보를 가진다
 #### Task 추가 기능
 
 - task를 추가 할 수 있는 GUI 제공
-- 전달 받는 정보는 없으며, 생성 시 Codex SDK로 thread를 생성하여 ID 할당
+- 전달 받는 정보는 없으며, 생성 시 Codex App Server로 thread를 생성하여 ID 할당
 - 생성 시 입력 값은 스케쥴 정보와 Prompt 이다.
 - CODEX thread ID는 사용자가 직접 입력하지 않는다.
 - thread 생성 실패 시 Task 생성도 실패로 처리한다.
@@ -93,7 +93,7 @@ Task는 아래의 정보를 가진다
 
 ### 스케쥴러 기능
 
-- 각 Task의 스케쥴 정보에 해당하는 시기에 Codex SDK를 이용하여 지정된 thread에 Prompt를 전달
+- 각 Task의 스케쥴 정보에 해당하는 시기에 Codex App Server를 이용하여 지정된 thread에 Prompt를 전달
 - enable=true 인 Task만 실행 대상이다.
 - 실행 성공/실패 여부를 실행 이력에 기록한다.
 - 실행 실패 시 해당 실행 건은 실패로 기록하고, 다음 스케쥴 주기는 정상적으로 계속 진행한다.
@@ -114,7 +114,7 @@ Task는 아래의 정보를 가진다
 - Task 생성 시 workspace scoped default skill 설치
 - 스케쥴러는 backend 내부 구성요소로 동작한다.
 - Codex 호출 로직은 API 계층과 분리된 서비스 계층으로 구성한다.
-- Codex SDK는 backend 런타임 내부에서 직접 호출하는 것을 기본 구현 방향으로 한다.
+- Codex App Server는 backend 런타임 내부에서 WebSocket JSON-RPC로 호출하는 것을 기본 구현 방향으로 한다.
 
 ## Frontend 요구사항
 
@@ -131,12 +131,12 @@ Task는 아래의 정보를 가진다
 
 ## Codex 연동 요구사항
 
-- Codex 연동은 `Codex SDK`를 기준으로 구현한다.
+- Codex 연동은 `Codex App Server`를 기준으로 구현한다.
 - Task 생성 시 새로운 Codex thread를 생성하고, 생성된 thread ID를 Task에 저장한다.
-- 스케쥴 실행 시 저장된 thread ID를 이용해 해당 thread를 resume 한 뒤 Prompt를 전달한다.
+- 스케쥴 실행 시 저장된 thread ID를 이용해 해당 thread를 resume 한 뒤 turn을 시작해 Prompt를 전달한다.
 - thread 생성 또는 Prompt 전달 실패 시 backend에서 오류를 감지하고 기록해야 한다.
 - 본 문서에서 `CODEX Session ID` 라고 표현하던 값은 구현상 `Codex thread ID` 를 의미한다.
-- 1차 구현에서는 backend 내부의 Node.js 서비스 계층이 Codex SDK를 직접 사용한다.
+- 1차 구현에서는 backend 내부의 Node.js 서비스 계층이 Codex App Server를 사용한다.
 
 ## 설정 및 운영
 

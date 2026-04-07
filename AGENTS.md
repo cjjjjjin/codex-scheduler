@@ -8,7 +8,7 @@
 
 ## 프로젝트 목적
 
-이 프로젝트는 OpenAI Codex SDK를 사용해, 지정된 주기에 지정된 Codex thread로 Prompt를 전달하는 시스템이다.
+이 프로젝트는 OpenAI Codex App Server를 사용해, 지정된 주기에 지정된 Codex thread로 Prompt를 전달하는 시스템이다.
 
 - Backend: Node.js + Express
 - Frontend: TypeScript + React
@@ -35,7 +35,7 @@ Task는 이 시스템의 기본 작업 단위이며 아래 정보를 가진다.
 - Task 삭제
 - Task enable/disable
 
-Task 추가 시에는 외부 입력으로 thread ID를 받지 않고, 생성 과정에서 Codex SDK로 새로운 thread를 만들고 그 ID를 할당해야 한다.
+Task 추가 시에는 외부 입력으로 thread ID를 받지 않고, 생성 과정에서 Codex App Server로 새로운 thread를 만들고 그 ID를 할당해야 한다.
 
 Task 편집 시 수정 가능한 항목은 아래로 제한한다.
 
@@ -44,7 +44,7 @@ Task 편집 시 수정 가능한 항목은 아래로 제한한다.
 
 ### 스케줄러
 
-각 Task의 CRON 스케줄에 맞춰 Codex SDK를 이용해 해당 thread에 Prompt를 전달해야 한다.
+각 Task의 CRON 스케줄에 맞춰 Codex App Server를 이용해 해당 thread에 Prompt를 전달해야 한다.
 
 ## 구현 원칙
 
@@ -54,7 +54,7 @@ Task 편집 시 수정 가능한 항목은 아래로 제한한다.
 - `enable=false` 인 Task는 스케줄 실행 대상에서 제외한다.
 - thread 생성 책임은 Task 생성 플로우에 포함한다.
 - thread ID는 Task 생성 후 시스템이 관리하는 값으로 취급한다.
-- backend는 Node.js 런타임에서 Codex SDK를 직접 호출하는 방향을 우선한다.
+- backend는 Node.js 런타임에서 Codex App Server를 호출하는 방향을 우선한다.
 
 ## Backend 지침
 
