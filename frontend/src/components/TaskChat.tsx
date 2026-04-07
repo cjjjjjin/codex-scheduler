@@ -28,7 +28,7 @@ function formatDateTime(value: string) {
 }
 
 function formatRelativeTaskState(task: Task) {
-  return task.enabled ? "Live thread" : "Paused thread";
+  return task.enabled ? "scheduler running" : "scheduler paused";
 }
 
 function SessionThreadLoading({ task }: { task: Task }) {
@@ -87,24 +87,23 @@ export function TaskChat({
 
   if (mode === "create") {
     return (
-      <section className="chat-shell panel conversation-panel">
+      <section className="chat-shell panel conversation-panel conversation-panel-create">
         <header className="chat-header">
           <div>
-            <p className="chat-label">New Session</p>
+            <p className="chat-label">Thread Session</p>
             <h2>첫 메시지로 Task 생성</h2>
             <p className="panel-subtitle">
-              아래 첫 메시지를 보내면 새 Task가 생성되고, 생성된 thread에서 바로 Codex와 대화가 시작됩니다.
+              첫 메시지를 보내면 새 Task와 thread가 생성되고, 같은 흐름에서 바로 Codex 대화가 시작됩니다.
             </p>
           </div>
           <div className="chat-task-summary">
-            <span className="chat-meta-pill">Draft</span>
-            <span className="chat-meta-pill subtle">pending thread</span>
+            <span className="status-chip draft">draft session</span>
           </div>
         </header>
 
         <section className="chat-context-bar">
           <label className="chat-context-card">
-            <span className="task-card-meta-label">CRON Schedule</span>
+            <span className="task-card-meta-label">Schedule</span>
             <input
               className="chat-inline-input"
               value={draftSchedule}
@@ -115,11 +114,7 @@ export function TaskChat({
           </label>
           <div className="chat-context-card">
             <span className="task-card-meta-label">Thread</span>
-            <p>첫 메시지 전송 후 자동 생성</p>
-          </div>
-          <div className="chat-context-card">
-            <span className="task-card-meta-label">Workspace</span>
-            <p>서버 기본 workspace 사용</p>
+            <p>첫 메시지 전송 후 자동 생성됩니다.</p>
           </div>
         </section>
 
@@ -134,7 +129,7 @@ export function TaskChat({
           />
         </label>
 
-        <div className="chat-thread">
+        <div className="chat-thread chat-thread-create">
           <article className="chat-message assistant">
             <div className="chat-avatar">C</div>
             <div className="chat-bubble assistant">
@@ -173,10 +168,10 @@ export function TaskChat({
 
   if (!selectedTask) {
     return (
-      <section className="chat-shell panel conversation-panel">
+      <section className="chat-shell panel conversation-panel conversation-panel-create">
         <header className="chat-header">
           <div>
-            <p className="chat-label">Session</p>
+            <p className="chat-label">Thread Session</p>
             <h2>Task를 먼저 선택하세요</h2>
             <p className="panel-subtitle">
               왼쪽에서 Task를 선택하면 같은 thread에 이어서 대화할 수 있습니다. 새 Task를 만들고 싶다면 `New Task`를 눌러주세요.
@@ -221,50 +216,16 @@ export function TaskChat({
   }
 
   return (
-    <section className="chat-shell panel conversation-panel">
-      <header className="chat-header">
-        <div>
-          <p className="chat-label">Session</p>
-          <h2>{selectedTask.prompt}</h2>
-          <p className="panel-subtitle">
-            선택한 Task의 `thread_id`를 그대로 사용해 Codex와 대화합니다.
-          </p>
-        </div>
-        <div className="chat-task-summary">
-          <span className={`status-chip ${selectedTask.enabled ? "enabled" : "disabled"}`}>
-            {formatRelativeTaskState(selectedTask)}
-          </span>
-          <span className="chat-meta-pill">{selectedTask.schedule}</span>
-        </div>
-      </header>
-
-      <section className="chat-context-bar">
-        <div className="chat-context-card">
-          <span className="task-card-meta-label">Thread</span>
-          <p className="task-card-mono" title={selectedTask.thread_id}>{selectedTask.thread_id}</p>
-        </div>
-        <div className="chat-context-card">
-          <span className="task-card-meta-label">Workspace</span>
-          <p title={selectedTask.workspace_directory}>{selectedTask.workspace_directory}</p>
-        </div>
-        <div className="chat-context-card">
-          <span className="task-card-meta-label">최근 실행</span>
-          <p>{history[0] ? formatDateTime(history[0].executed_at) : "아직 없음"}</p>
-        </div>
-      </section>
-
+    <section className="thread-stage">
       <div className="chat-thread assistant-chat-thread">
         <Suspense fallback={<SessionThreadLoading task={selectedTask} />}>
           <AssistantTaskThread task={selectedTask} onMetaChange={onSessionMetaChange} />
         </Suspense>
       </div>
-
-      <footer className="chat-composer-shell assistant-chat-meta-shell">
-        <div className="chat-composer-meta">
-          <span>{history.length}개의 스케줄 실행 이력</span>
-          <span>{selectedTask.enabled ? "scheduler enabled" : "scheduler paused"}</span>
-        </div>
-      </footer>
+      <div className="thread-stage-meta">
+        <span>{history[0] ? `최근 실행 ${formatDateTime(history[0].executed_at)}` : "아직 실행 기록이 없습니다."}</span>
+        <span>{formatRelativeTaskState(selectedTask)}</span>
+      </div>
     </section>
   );
 }

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 import { api } from "./api/client";
-import { ExecutionPanel } from "./components/ExecutionPanel";
 import { TaskChat } from "./components/TaskChat";
 import { TaskForm } from "./components/TaskForm";
 import { TaskList } from "./components/TaskList";
@@ -184,7 +183,7 @@ export default function App() {
 
       <main className="chat-layout">
         <aside className="sidebar">
-          <section className="sidebar-shell panel">
+          <section className="sidebar-shell">
             <header className="sidebar-minimal-header">
               <div>
                 <p className="eyebrow">codex-scheduler</p>
@@ -237,42 +236,18 @@ export default function App() {
         </aside>
 
         <section className="chat-main">
-          <section className="workspace-shell">
-            <header className="workspace-header panel">
-              <div>
-                <p className="stack-label">Workspace</p>
-                <h2>{viewMode === "create" ? "새 Task 시작" : selectedTask ? selectedTask.prompt : "Task workspace"}</h2>
-                <p className="panel-subtitle">
-                  {viewMode === "create"
-                    ? "첫 메시지와 스케줄을 정하면 새 thread가 생성되고 같은 흐름에서 바로 대화가 시작됩니다."
-                    : selectedTask
-                      ? "선택한 Task의 thread를 재사용해 Codex와 상호작용합니다."
-                      : "Task를 선택하면 prompt, 대화, 실행 기록을 한 흐름으로 볼 수 있습니다."}
-                </p>
-              </div>
-              <div className="workspace-header-meta">
-                <span className="meta-pill">{viewMode === "create" ? "Draft session" : "Thread session"}</span>
-                <span className="meta-pill subtle">{selectedTask ? selectedTask.schedule : "schedule pending"}</span>
-              </div>
-            </header>
-
-            <div className="workspace-grid">
-              <TaskChat
-                mode={viewMode === "create" ? "create" : "chat"}
-                history={history}
-                selectedTask={selectedTask}
-                isSending={isChatSending}
-                draftSchedule={draftSchedule}
-                draftEnvironmentVariables={draftEnvironmentVariables}
-                onDraftScheduleChange={setDraftSchedule}
-                onDraftEnvironmentVariablesChange={setDraftEnvironmentVariables}
-                onCreateTaskFromMessage={handleCreateTaskFromMessage}
-                onSessionMetaChange={handleSessionMetaChange}
-              />
-
-              <ExecutionPanel selectedTask={selectedTask} history={history} />
-            </div>
-          </section>
+          <TaskChat
+            mode={viewMode === "create" ? "create" : "chat"}
+            history={history}
+            selectedTask={selectedTask}
+            isSending={isChatSending}
+            draftSchedule={draftSchedule}
+            draftEnvironmentVariables={draftEnvironmentVariables}
+            onDraftScheduleChange={setDraftSchedule}
+            onDraftEnvironmentVariablesChange={setDraftEnvironmentVariables}
+            onCreateTaskFromMessage={handleCreateTaskFromMessage}
+            onSessionMetaChange={handleSessionMetaChange}
+          />
         </section>
       </main>
     </div>
